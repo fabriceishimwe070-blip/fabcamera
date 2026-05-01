@@ -2,12 +2,17 @@
 <html>
 <head>
   <title>Firebase Video Call</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; background: #f0f0f0; }
+    video { background: #000; border-radius: 10px; margin: 10px; }
+    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+  </style>
 </head>
 <body>
 
 <h2>WebRTC Video Call</h2>
 
-<video id="localVideo" autoplay playsinline width="300"></video>
+<video id="localVideo" autoplay playsinline width="300" muted></video>
 <video id="remoteVideo" autoplay playsinline width="300"></video>
 
 <br><br>
@@ -19,7 +24,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 <script>
-
 const firebaseConfig = {
   apiKey: "AIzaSyCwibtCkdEl0sHBiFbgbImjYM3dWG1Kopg",
   authDomain: "web-cam-c4d2c.firebaseapp.com",
@@ -33,161 +37,83 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 const servers = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    {
-      urls: "turn:relay.metered.ca:443?transport=tcp",
-      username: "open",
-      credential: "open"
-    }
-  ]
+  iceServers: [{ urls: ["stun:stun1.l.google.com:19302", "stun:stun2.l.google.com:19302"] }],
+  iceCandidatePoolSize: 10,
 };
 
-let pc;
-let localStream;
+let pc = new RTCPeerConnection(servers);
+let localStream = null;
+let remoteStream = null;
 const roomId = "room1";
-let pendingCandidates = [];
 
 async function getMedia() {
-  localStream = await navigator.mediaDevices.getUserMedia({
-    video: true,
-    audio: true
-  });
+  localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+  remoteStream = new MediaStream();
 
-  document.getElementById("localVideo").srcObject = localStream;
-}
-
-function setupRemoteStream() {
-  const remoteStream = new MediaStream();
-  document.getElementById("remoteVideo").srcObject = remoteStream;
+  localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
 
   pc.ontrack = (event) => {
-    event.streams[0].getTracks().forEach(track => {
-      remoteStream.addTrack(track);
-    });
+    event.streams[0].getTracks().forEach((track) => remoteStream.addTrack(track));
   };
-}
 
-function addCandidate(candidate) {
-  if (pc.remoteDescription) {
-    pc.addIceCandidate(new RTCIceCandidate(candidate));
-  } else {
-    pendingCandidates.push(candidate);
-  }
-}
-
-function flushCandidates() {
-  pendingCandidates.forEach(c => {
-    pc.addIceCandidate(new RTCIceCandidate(c));
-  });
-  pendingCandidates = [];
+  document.getElementById("localVideo").srcObject = localStream;
+  document.getElementById("remoteVideo").srcObject = remoteStream;
 }
 
 async function startCall() {
   await getMedia();
-
-  pc = new RTCPeerConnection(servers);
-
-  localStream.getTracks().forEach(track => {
-    pc.addTrack(track, localStream);
-  });
-
   const roomRef = db.collection("rooms").doc(roomId);
-
   const callerCandidates = roomRef.collection("callerCandidates");
-  const calleeCandidates = roomRef.collection("calleeCandidates");
-
-  setupRemoteStream();
 
   pc.onicecandidate = (event) => {
-    if (event.candidate) {
-      callerCandidates.add(event.candidate.toJSON());
-    }
-  };
-
-  calleeCandidates.onSnapshot(snapshot => {
-    snapshot.docChanges().forEach(change => {
-      if (change.type === "added") {
-        addCandidate(change.doc.data());
-      }
-    });
-  });
-
-  pc.onconnectionstatechange = () => {
-    console.log("Connection:", pc.connectionState);
+    if (event.candidate) callerCandidates.add(event.candidate.toJSON());
   };
 
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
 
-  await roomRef.set({
-    offer: {
-      type: offer.type,
-      sdp: offer.sdp
-    }
-  });
+  await roomRef.set({ offer: { type: offer.type, sdp: offer.sdp } });
 
   roomRef.onSnapshot(async (snapshot) => {
     const data = snapshot.data();
-    if (data?.answer && !pc.currentRemoteDescription) {
-      await pc.setRemoteDescription(data.answer);
-      flushCandidates();
+    if (!pc.currentRemoteDescription && data?.answer) {
+      await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
     }
+  });
+
+  roomRef.collection("calleeCandidates").onSnapshot((snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "added") pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+    });
   });
 }
 
 async function joinCall() {
   await getMedia();
-
-  pc = new RTCPeerConnection(servers);
-
-  localStream.getTracks().forEach(track => {
-    pc.addTrack(track, localStream);
-  });
-
   const roomRef = db.collection("rooms").doc(roomId);
-
-  const callerCandidates = roomRef.collection("callerCandidates");
   const calleeCandidates = roomRef.collection("calleeCandidates");
 
-  setupRemoteStream();
-
   pc.onicecandidate = (event) => {
-    if (event.candidate) {
-      calleeCandidates.add(event.candidate.toJSON());
-    }
+    if (event.candidate) calleeCandidates.add(event.candidate.toJSON());
   };
 
-  callerCandidates.onSnapshot(snapshot => {
-    snapshot.docChanges().forEach(change => {
-      if (change.type === "added") {
-        addCandidate(change.doc.data());
-      }
-    });
-  });
+  const roomSnapshot = await roomRef.get();
+  if (!roomSnapshot.exists) return;
 
-  const roomData = (await roomRef.get()).data();
-
-  await pc.setRemoteDescription(roomData.offer);
+  const data = roomSnapshot.data();
+  await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
 
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
 
-  await roomRef.update({
-    answer: {
-      type: answer.type,
-      sdp: answer.sdp
-    }
+  await roomRef.update({ answer: { type: answer.type, sdp: answer.sdp } });
+
+  roomRef.collection("callerCandidates").onSnapshot((snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "added") pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+    });
   });
-
-  flushCandidates();
-
-  pc.onconnectionstatechange = () => {
-    console.log("Connection:", pc.connectionState);
-  };
 }
-
 </script>
-
 </body>
 </html>
