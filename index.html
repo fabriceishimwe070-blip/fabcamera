@@ -50,19 +50,7 @@ async function getMedia() {
   document.getElementById("localVideo").srcObject = localStream;
 }
 
-async function startCall() {
-  await getMedia();
-
-  pc = new RTCPeerConnection(servers);
-
-  localStream.getTracks().forEach(track => {
-    pc.addTrack(track, localStream);
-  });
-
-  const roomRef = db.collection("rooms").doc(roomId);
-  const callerCandidates = roomRef.collection("callerCandidates");
-  const calleeCandidates = roomRef.collection("calleeCandidates");
-
+function setupRemoteStream() {
   const remoteStream = new MediaStream();
   document.getElementById("remoteVideo").srcObject = remoteStream;
 
@@ -71,12 +59,37 @@ async function startCall() {
       remoteStream.addTrack(track);
     });
   };
+}
+
+function setupIce(roomRef, sender, receiver) {
+  const senderCandidates = roomRef.collection(sender);
+  const receiverCandidates = roomRef.collection(receiver);
 
   pc.onicecandidate = (event) => {
     if (event.candidate) {
-      callerCandidates.add(event.candidate.toJSON());
+      senderCandidates.add(event.candidate.toJSON());
     }
   };
+
+  receiverCandidates.onSnapshot(snapshot => {
+    snapshot.docChanges().forEach(change => {
+      if (change.type === "added") {
+        pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+      }
+    });
+  });
+}
+
+async function startCall() {
+  await getMedia();
+
+  pc = new RTCPeerConnection(servers);
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  const roomRef = db.collection("rooms").doc(roomId);
+
+  setupRemoteStream();
+  setupIce(roomRef, "callerCandidates", "calleeCandidates");
 
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
@@ -90,18 +103,9 @@ async function startCall() {
 
   roomRef.onSnapshot(async (snapshot) => {
     const data = snapshot.data();
-
-    if (data.answer && !pc.currentRemoteDescription) {
+    if (data?.answer && !pc.currentRemoteDescription) {
       await pc.setRemoteDescription(data.answer);
     }
-  });
-
-  calleeCandidates.onSnapshot(snapshot => {
-    snapshot.docChanges().forEach(change => {
-      if (change.type === "added") {
-        pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
-      }
-    });
   });
 }
 
@@ -109,29 +113,12 @@ async function joinCall() {
   await getMedia();
 
   pc = new RTCPeerConnection(servers);
-
-  localStream.getTracks().forEach(track => {
-    pc.addTrack(track, localStream);
-  });
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
   const roomRef = db.collection("rooms").doc(roomId);
-  const callerCandidates = roomRef.collection("callerCandidates");
-  const calleeCandidates = roomRef.collection("calleeCandidates");
 
-  const remoteStream = new MediaStream();
-  document.getElementById("remoteVideo").srcObject = remoteStream;
-
-  pc.ontrack = (event) => {
-    event.streams[0].getTracks().forEach(track => {
-      remoteStream.addTrack(track);
-    });
-  };
-
-  pc.onicecandidate = (event) => {
-    if (event.candidate) {
-      calleeCandidates.add(event.candidate.toJSON());
-    }
-  };
+  setupRemoteStream();
+  setupIce(roomRef, "calleeCandidates", "callerCandidates");
 
   const roomData = (await roomRef.get()).data();
 
@@ -145,14 +132,6 @@ async function joinCall() {
       type: answer.type,
       sdp: answer.sdp
     }
-  });
-
-  callerCandidates.onSnapshot(snapshot => {
-    snapshot.docChanges().forEach(change => {
-      if (change.type === "added") {
-        pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
-      }
-    });
   });
 }
 
