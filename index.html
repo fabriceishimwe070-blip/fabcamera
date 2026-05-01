@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Firebase Video Call</title>
+</head>
+<body>
+
+<h2>WebRTC Video Call</h2>
+
+<video id="localVideo" autoplay playsinline width="300"></video>
+<video id="remoteVideo" autoplay playsinline width="300"></video>
+
+<br><br>
+
+<button onclick="startCall()">Start Call</button>
+<button onclick="joinCall()">Join Call</button>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
+
+<script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCwibtCkdEl0sHBiFbgbImjYM3dWG1Kopg",
+  authDomain: "web-cam-c4d2c.firebaseapp.com",
+  projectId: "web-cam-c4d2c",
+  storageBucket: "web-cam-c4d2c.firebasestorage.app",
+  messagingSenderId: "984503419504",
+  appId: "1:984503419504:web:6ce08f1fec6d0e4758aab5"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const servers = {
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+};
+
+let pc;
+let localStream;
+
+const roomId = "room1";
+
+
+async function getMedia() {
+  localStream = await navigator.mediaDevices.getUserMedia({
+    video: true,
+    audio: true
+  });
+
+  document.getElementById("localVideo").srcObject = localStream;
+}
+
+/* START CALL (CREATOR) */
+async function startCall() {
+  await getMedia();
+
+  pc = new RTCPeerConnection(servers);
+
+  localStream.getTracks().forEach(track => {
+    pc.addTrack(track, localStream);
+  });
+
+  const roomRef = db.collection("rooms").doc(roomId);
+  const callerCandidates = roomRef.collection("callerCandidates");
+  const calleeCandidates = roomRef.collection("calleeCandidates");
+
+  pc.onicecandidate = (event) => {
+    if (event.candidate) {
+      callerCandidates.add(event.candidate.toJSON());
+    }
+  };
+
+  pc.ontrack = (event) => {
+    document.getElementById("remoteVideo").srcObject = event.streams[0];
+  };
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+
+  await roomRef.set({ offer });
+
+  roomRef.onSnapshot(async (snapshot) => {
+    const data = snapshot.data();
+
+    if (data.answer && !pc.currentRemoteDescription) {
+      await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+    }
+  });
+
+  calleeCandidates.onSnapshot(snapshot => {
+    snapshot.docChanges().forEach(change => {
+      if (change.type === "added") {
+        pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+      }
+    });
+  });
+}
+
+/* JOIN CALL (RECEIVER) */
+async function joinCall() {
+  await getMedia();
+
+  pc = new RTCPeerConnection(servers);
+
+  localStream.getTracks().forEach(track => {
+    pc.addTrack(track, localStream);
+  });
+
+  const roomRef = db.collection("rooms").doc(roomId);
+  const callerCandidates = roomRef.collection("callerCandidates");
+  const calleeCandidates = roomRef.collection("calleeCandidates");
+
+  pc.onicecandidate = (event) => {
+    if (event.candidate) {
+      calleeCandidates.add(event.candidate.toJSON());
+    }
+  };
+
+  pc.ontrack = (event) => {
+    document.getElementById("remoteVideo").srcObject = event.streams[0];
+  };
+
+  const roomData = (await roomRef.get()).data();
+
+  await pc.setRemoteDescription(new RTCSessionDescription(roomData.offer));
+
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+
+  await roomRef.update({ answer });
+
+  callerCandidates.onSnapshot(snapshot => {
+    snapshot.docChanges().forEach(change => {
+      if (change.type === "added") {
+        pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+      }
+    });
+  });
+}
+</script>
+
+</body>
+</html>
