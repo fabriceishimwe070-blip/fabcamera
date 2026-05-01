@@ -41,7 +41,6 @@ let localStream;
 
 const roomId = "room1";
 
-
 async function getMedia() {
   localStream = await navigator.mediaDevices.getUserMedia({
     video: true,
@@ -50,7 +49,6 @@ async function getMedia() {
 
   document.getElementById("localVideo").srcObject = localStream;
 }
-
 
 async function startCall() {
   await getMedia();
@@ -65,26 +63,36 @@ async function startCall() {
   const callerCandidates = roomRef.collection("callerCandidates");
   const calleeCandidates = roomRef.collection("calleeCandidates");
 
+  const remoteStream = new MediaStream();
+  document.getElementById("remoteVideo").srcObject = remoteStream;
+
+  pc.ontrack = (event) => {
+    event.streams[0].getTracks().forEach(track => {
+      remoteStream.addTrack(track);
+    });
+  };
+
   pc.onicecandidate = (event) => {
     if (event.candidate) {
       callerCandidates.add(event.candidate.toJSON());
     }
   };
 
-  pc.ontrack = (event) => {
-    document.getElementById("remoteVideo").srcObject = event.streams[0];
-  };
-
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
 
-  await roomRef.set({ offer });
+  await roomRef.set({
+    offer: {
+      type: offer.type,
+      sdp: offer.sdp
+    }
+  });
 
   roomRef.onSnapshot(async (snapshot) => {
     const data = snapshot.data();
 
     if (data.answer && !pc.currentRemoteDescription) {
-      await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+      await pc.setRemoteDescription(data.answer);
     }
   });
 
@@ -97,7 +105,6 @@ async function startCall() {
   });
 }
 
-/* JOIN CALL (RECEIVER) */
 async function joinCall() {
   await getMedia();
 
@@ -111,24 +118,34 @@ async function joinCall() {
   const callerCandidates = roomRef.collection("callerCandidates");
   const calleeCandidates = roomRef.collection("calleeCandidates");
 
+  const remoteStream = new MediaStream();
+  document.getElementById("remoteVideo").srcObject = remoteStream;
+
+  pc.ontrack = (event) => {
+    event.streams[0].getTracks().forEach(track => {
+      remoteStream.addTrack(track);
+    });
+  };
+
   pc.onicecandidate = (event) => {
     if (event.candidate) {
       calleeCandidates.add(event.candidate.toJSON());
     }
   };
 
-  pc.ontrack = (event) => {
-    document.getElementById("remoteVideo").srcObject = event.streams[0];
-  };
-
   const roomData = (await roomRef.get()).data();
 
-  await pc.setRemoteDescription(new RTCSessionDescription(roomData.offer));
+  await pc.setRemoteDescription(roomData.offer);
 
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
 
-  await roomRef.update({ answer });
+  await roomRef.update({
+    answer: {
+      type: answer.type,
+      sdp: answer.sdp
+    }
+  });
 
   callerCandidates.onSnapshot(snapshot => {
     snapshot.docChanges().forEach(change => {
@@ -138,6 +155,7 @@ async function joinCall() {
     });
   });
 }
+
 </script>
 
 </body>
