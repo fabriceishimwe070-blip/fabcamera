@@ -41,12 +41,14 @@ let iceQueue = [];
 const servers = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
+
     {
-      urls: "turn:openrelay.metered.ca:80",
+      urls: "turn:relay1.expressturn.com:3478",
       username: "openrelayproject",
       credential: "openrelayproject"
     }
-  ]
+  ],
+  iceCandidatePoolSize: 20
 };
 
 function createPeer() {
