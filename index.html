@@ -15,7 +15,7 @@
 <input id="peerId" placeholder="Enter Friend ID">
 <br>
 
-<button onclick="start()">Start (Get My ID)</button>
+<button onclick="start()">Start</button>
 <button onclick="callPeer()">Call</button>
 
 <br><br>
@@ -24,6 +24,7 @@
 
 <video id="localVideo" autoplay muted playsinline></video>
 <video id="remoteVideo" autoplay playsinline></video>
+
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 
 <script>
@@ -36,25 +37,28 @@ async function start() {
 
   peer.on("open", async (id) => {
     document.getElementById("myId").innerText = id;
-    console.log("My ID:", id);
 
     localStream = await navigator.mediaDevices.getUserMedia({
       video: true,
       audio: true
     });
 
-    document.getElementById("localVideo").srcObject = localStream;
+    const localVideo = document.getElementById("localVideo");
+    localVideo.srcObject = localStream;
+    localVideo.onloadedmetadata = () => {
+      localVideo.play();
+    };
   });
 
-  // 👇 VERY IMPORTANT (receiver side)
   peer.on("call", (call) => {
-    console.log("Incoming call");
-
     call.answer(localStream);
 
     call.on("stream", (remoteStream) => {
-      console.log("REMOTE STREAM RECEIVED");
-      document.getElementById("remoteVideo").srcObject = remoteStream;
+      const remoteVideo = document.getElementById("remoteVideo");
+      remoteVideo.srcObject = remoteStream;
+      remoteVideo.onloadedmetadata = () => {
+        remoteVideo.play().catch(() => {});
+      };
     });
 
     currentCall = call;
@@ -65,14 +69,14 @@ function callPeer() {
   const id = document.getElementById("peerId").value;
   if (!id) return alert("Enter Friend ID");
 
-  console.log("Calling:", id);
-
   const call = peer.call(id, localStream);
 
-  // 👇 VERY IMPORTANT (caller side)
   call.on("stream", (remoteStream) => {
-    console.log("CALLER RECEIVED STREAM");
-    document.getElementById("remoteVideo").srcObject = remoteStream;
+    const remoteVideo = document.getElementById("remoteVideo");
+    remoteVideo.srcObject = remoteStream;
+    remoteVideo.onloadedmetadata = () => {
+      remoteVideo.play().catch(() => {});
+    };
   });
 
   currentCall = call;
