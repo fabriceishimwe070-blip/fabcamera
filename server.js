@@ -1,12 +1,14 @@
 const WebSocket = require("ws");
 
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT;
 
 const wss = new WebSocket.Server({ port: PORT });
 
 const rooms = {};
 
 wss.on("connection", (ws) => {
+  console.log("Client connected");
+
   ws.on("message", (message) => {
     const data = JSON.parse(message);
     const room = data.room;
