@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Firebase Video Call</title>
+  <title>Firebase Video Call (TURN Stable)</title>
   <style>
     body { font-family: sans-serif; text-align: center; background: #f0f0f0; }
     video { background: #000; border-radius: 10px; margin: 10px; }
@@ -10,7 +10,7 @@
 </head>
 <body>
 
-<h2>WebRTC Video Call</h2>
+<h2>WebRTC Video Call (Stable TURN)</h2>
 
 <video id="localVideo" autoplay playsinline width="300" muted></video>
 <video id="remoteVideo" autoplay playsinline width="300"></video>
@@ -39,7 +39,26 @@ const db = firebase.firestore();
 const roomId = prompt("Enter Room ID");
 
 const servers = {
-  iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+
+    {
+      urls: "turn:openrelay.metered.ca:80",
+      username: "openrelayproject",
+      credential: "openrelayproject"
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443",
+      username: "openrelayproject",
+      credential: "openrelayproject"
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443?transport=tcp",
+      username: "openrelayproject",
+      credential: "openrelayproject"
+    }
+  ],
+  iceTransportPolicy: "all"
 };
 
 let pc;
@@ -75,7 +94,6 @@ async function startCall() {
   await getMedia();
 
   const roomRef = db.collection("rooms").doc(roomId);
-
   const callerCandidates = roomRef.collection("callerCandidates");
 
   pc.onicecandidate = (event) => {
@@ -108,7 +126,6 @@ async function joinCall() {
   await getMedia();
 
   const roomRef = db.collection("rooms").doc(roomId);
-
   const calleeCandidates = roomRef.collection("calleeCandidates");
 
   pc.onicecandidate = (event) => {
