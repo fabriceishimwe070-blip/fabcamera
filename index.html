@@ -41,12 +41,32 @@ async function getMedia() {
 }
 
 function connectWS() {
-  ws = new WebSocket("ws://localhost:3000");
+  console.log("Connecting WebSocket...");
+
+  ws = new WebSocket("wss://fabcamera.onrender.com");
+
+  ws.onopen = () => {
+    console.log("WS CONNECTED");
+    ws.send(JSON.stringify({ type: "join", room }));
+  };
+
+  ws.onerror = (e) => {
+    console.log("WS ERROR", e);
+  };
+
+  ws.onclose = () => {
+    console.log("WS CLOSED");
+  };
 
   ws.onmessage = async (message) => {
     const data = JSON.parse(message.data);
+    console.log("WS MESSAGE:", data);
+
+    if (!pc) return;
 
     if (data.offer) {
+      console.log("OFFER RECEIVED");
+
       await pc.setRemoteDescription(data.offer);
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
@@ -55,13 +75,16 @@ function connectWS() {
     }
 
     if (data.answer) {
+      console.log("ANSWER RECEIVED");
       await pc.setRemoteDescription(data.answer);
     }
 
     if (data.candidate) {
       try {
         await pc.addIceCandidate(data.candidate);
-      } catch (e) {}
+      } catch (e) {
+        console.log("ICE ERROR", e);
+      }
     }
   };
 }
@@ -89,6 +112,8 @@ function createPeer() {
 }
 
 async function startCall() {
+  console.log("START CLICKED");
+
   room = document.getElementById("room").value;
   if (!room) return alert("Enter Room ID");
 
@@ -97,10 +122,12 @@ async function startCall() {
   createPeer();
 
   ws.onopen = async () => {
-    ws.send(JSON.stringify({ type: "join", room }));
+    console.log("JOINING ROOM (HOST)");
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
+
+    ws.send(JSON.stringify({ type: "join", room }));
 
     ws.send(JSON.stringify({
       type: "signal",
@@ -111,6 +138,8 @@ async function startCall() {
 }
 
 async function joinCall() {
+  console.log("JOIN CLICKED");
+
   room = document.getElementById("room").value;
   if (!room) return alert("Enter Room ID");
 
@@ -119,6 +148,7 @@ async function joinCall() {
   createPeer();
 
   ws.onopen = () => {
+    console.log("JOINING ROOM (GUEST)");
     ws.send(JSON.stringify({ type: "join", room }));
   };
 }
