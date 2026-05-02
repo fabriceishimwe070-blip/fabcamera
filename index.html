@@ -24,16 +24,15 @@
 
 <video id="localVideo" autoplay muted playsinline></video>
 <video id="remoteVideo" autoplay playsinline></video>
-
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 
 <script>
 let localStream;
 let peer;
-let call;
+let currentCall;
 
 async function start() {
-  peer = new Peer(); // PeerJS cloud server
+  peer = new Peer();
 
   peer.on("open", async (id) => {
     document.getElementById("myId").innerText = id;
@@ -47,14 +46,18 @@ async function start() {
     document.getElementById("localVideo").srcObject = localStream;
   });
 
-  peer.on("call", (incomingCall) => {
+  // 👇 VERY IMPORTANT (receiver side)
+  peer.on("call", (call) => {
     console.log("Incoming call");
 
-    incomingCall.answer(localStream);
+    call.answer(localStream);
 
-    incomingCall.on("stream", (remoteStream) => {
+    call.on("stream", (remoteStream) => {
+      console.log("REMOTE STREAM RECEIVED");
       document.getElementById("remoteVideo").srcObject = remoteStream;
     });
+
+    currentCall = call;
   });
 }
 
@@ -62,11 +65,17 @@ function callPeer() {
   const id = document.getElementById("peerId").value;
   if (!id) return alert("Enter Friend ID");
 
-  call = peer.call(id, localStream);
+  console.log("Calling:", id);
 
+  const call = peer.call(id, localStream);
+
+  // 👇 VERY IMPORTANT (caller side)
   call.on("stream", (remoteStream) => {
+    console.log("CALLER RECEIVED STREAM");
     document.getElementById("remoteVideo").srcObject = remoteStream;
   });
+
+  currentCall = call;
 }
 </script>
 
