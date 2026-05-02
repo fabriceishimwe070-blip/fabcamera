@@ -39,46 +39,18 @@ const db = firebase.firestore();
 const roomId = prompt("Enter Room ID");
 
 const servers = {
-  iceServers: [
-    {
-      urls: [
-        "stun:stun.l.google.com:19302",
-        "stun:stun1.l.google.com:19302",
-        "stun:stun2.l.google.com:19302",
-        "stun:stun3.l.google.com:19302"
-      ]
-    },
-    {
-      urls: "stun:stun.stunprotocol.org"
-    },
-    {
-      urls: "stun:stun.services.mozilla.com"
-    }
-  ]
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
 };
 
 let pc;
 let localStream;
 let remoteStream;
 
-async function getMedia() {
-  localStream = await navigator.mediaDevices.getUserMedia({
-    video: true,
-    audio: true
-  });
-
-  remoteStream = new MediaStream();
-
-  document.getElementById("localVideo").srcObject = localStream;
-  document.getElementById("remoteVideo").srcObject = remoteStream;
-}
-
-function createPeer(roomRef, isCaller) {
+function createPeer() {
   pc = new RTCPeerConnection(servers);
 
-  localStream.getTracks().forEach(track => {
-    pc.addTrack(track, localStream);
-  });
+  remoteStream = new MediaStream();
+  document.getElementById("remoteVideo").srcObject = remoteStream;
 
   pc.ontrack = (event) => {
     event.streams[0].getTracks().forEach(track => {
@@ -86,37 +58,34 @@ function createPeer(roomRef, isCaller) {
     });
   };
 
-  const candidatesRef = roomRef.collection(
-    isCaller ? "callerCandidates" : "calleeCandidates"
-  );
-
-  pc.onicecandidate = (event) => {
-    if (event.candidate) {
-      candidatesRef.add(event.candidate.toJSON());
-    }
-  };
-
   pc.onconnectionstatechange = () => {
     console.log("Connection:", pc.connectionState);
   };
 }
 
+async function getMedia() {
+  localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+  document.getElementById("localVideo").srcObject = localStream;
+
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+}
+
 async function startCall() {
+  createPeer();
   await getMedia();
 
   const roomRef = db.collection("rooms").doc(roomId);
 
-  createPeer(roomRef, true);
+  const callerCandidates = roomRef.collection("callerCandidates");
+
+  pc.onicecandidate = (event) => {
+    if (event.candidate) callerCandidates.add(event.candidate.toJSON());
+  };
 
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
 
-  await roomRef.set({
-    offer: {
-      type: offer.type,
-      sdp: offer.sdp
-    }
-  });
+  await roomRef.set({ offer });
 
   roomRef.onSnapshot(async snapshot => {
     const data = snapshot.data();
@@ -135,9 +104,16 @@ async function startCall() {
 }
 
 async function joinCall() {
+  createPeer();
   await getMedia();
 
   const roomRef = db.collection("rooms").doc(roomId);
+
+  const calleeCandidates = roomRef.collection("calleeCandidates");
+
+  pc.onicecandidate = (event) => {
+    if (event.candidate) calleeCandidates.add(event.candidate.toJSON());
+  };
 
   const roomSnapshot = await roomRef.get();
 
@@ -146,8 +122,6 @@ async function joinCall() {
     return;
   }
 
-  createPeer(roomRef, false);
-
   const data = roomSnapshot.data();
 
   await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
@@ -155,12 +129,7 @@ async function joinCall() {
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
 
-  await roomRef.update({
-    answer: {
-      type: answer.type,
-      sdp: answer.sdp
-    }
-  });
+  await roomRef.update({ answer });
 
   roomRef.collection("callerCandidates").onSnapshot(snapshot => {
     snapshot.docChanges().forEach(change => {
