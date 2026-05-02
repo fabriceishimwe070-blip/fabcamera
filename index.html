@@ -36,11 +36,18 @@ const config = {
 };
 
 async function getMedia() {
-  localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-  document.getElementById("localVideo").srcObject = localStream;
+  if (!localStream) {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    document.getElementById("localVideo").srcObject = localStream;
+  }
 }
 
 function connectWS() {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    console.log("Already connected");
+    return;
+  }
+
   console.log("Connecting WebSocket...");
 
   ws = new WebSocket("wss://fabcamera.onrender.com");
@@ -55,7 +62,8 @@ function connectWS() {
   };
 
   ws.onclose = () => {
-    console.log("WS CLOSED");
+    console.log("WS CLOSED - retrying...");
+    setTimeout(connectWS, 2000);
   };
 
   ws.onmessage = async (message) => {
@@ -101,7 +109,7 @@ function createPeer() {
   };
 
   pc.onicecandidate = (event) => {
-    if (event.candidate) {
+    if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({
         type: "signal",
         room,
@@ -118,16 +126,14 @@ async function startCall() {
   if (!room) return alert("Enter Room ID");
 
   await getMedia();
-  connectWS();
   createPeer();
+  connectWS();
 
   ws.onopen = async () => {
     console.log("JOINING ROOM (HOST)");
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-
-    ws.send(JSON.stringify({ type: "join", room }));
 
     ws.send(JSON.stringify({
       type: "signal",
@@ -144,12 +150,11 @@ async function joinCall() {
   if (!room) return alert("Enter Room ID");
 
   await getMedia();
-  connectWS();
   createPeer();
+  connectWS();
 
   ws.onopen = () => {
     console.log("JOINING ROOM (GUEST)");
-    ws.send(JSON.stringify({ type: "join", room }));
   };
 }
 </script>
