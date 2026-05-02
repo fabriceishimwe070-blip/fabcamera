@@ -1,154 +1,69 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Stable Firebase WebRTC Call</title>
+  <title>Video Call</title>
   <style>
-    body { font-family: sans-serif; text-align: center; background: #f0f0f0; }
-    video { background: black; border-radius: 10px; margin: 10px; }
-    button { padding: 10px 20px; margin: 5px; }
+    body { text-align: center; font-family: Arial; background: #f2f2f2; }
+    video { width: 300px; margin: 10px; background: black; border-radius: 10px; }
+    input, button { padding: 10px; margin: 5px; font-size: 16px; }
   </style>
 </head>
 <body>
 
-<h2>Video Call</h2>
+<h2>Simple Video Call</h2>
 
-<video id="localVideo" autoplay playsinline muted width="300"></video>
-<video id="remoteVideo" autoplay playsinline width="300"></video>
-
+<input id="room" placeholder="Enter Room ID">
 <br>
 
 <button onclick="startCall()">Start Call</button>
 <button onclick="joinCall()">Join Call</button>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<br><br>
+
+<video id="localVideo" autoplay muted playsinline></video>
+<video id="remoteVideo" autoplay playsinline></video>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 
 <script>
-firebase.initializeApp({
-  apiKey: "AIzaSyCwibtCkdEl0sHBiFbgbImjYM3dWG1Kopg",
-  authDomain: "web-cam-c4d2c.firebaseapp.com",
-  projectId: "web-cam-c4d2c"
-});
-
-const db = firebase.firestore();
-const roomId = prompt("Room ID");
-
-const servers = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    {
-      urls: "turn:openrelay.metered.ca:80",
-      username: "openrelayproject",
-      credential: "openrelayproject"
-    }
-  ]
-};
-
-let pc;
 let localStream;
-let remoteStream;
-let remoteReady = false;
-let iceQueue = [];
-
-function createPeer() {
-  pc = new RTCPeerConnection(servers);
-
-  remoteStream = new MediaStream();
-  document.getElementById("remoteVideo").srcObject = remoteStream;
-
-  pc.ontrack = e => {
-    e.streams[0].getTracks().forEach(t => remoteStream.addTrack(t));
-  };
-
-  pc.onicecandidate = e => {
-    if (!e.candidate) return;
-    window.sendIce && window.sendIce(e.candidate.toJSON());
-  };
-
-  pc.onconnectionstatechange = () => {
-    console.log("STATE:", pc.connectionState);
-  };
-}
+let peer;
+let call;
 
 async function getMedia() {
   localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
   document.getElementById("localVideo").srcObject = localStream;
-  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
 }
 
-function flushQueue() {
-  if (pc.remoteDescription) {
-    iceQueue.forEach(c => pc.addIceCandidate(new RTCIceCandidate(c)));
-    iceQueue = [];
-  }
-}
+function startCall() {
+  const id = document.getElementById("room").value;
+  peer = new Peer(id);
 
-async function startCall() {
-  createPeer();
-  await getMedia();
-
-  const roomRef = db.collection("rooms").doc(roomId);
-  const callerCandidates = roomRef.collection("callerCandidates");
-
-  window.sendIce = c => callerCandidates.add(c);
-
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-
-  await roomRef.set({ offer });
-
-  roomRef.onSnapshot(async snap => {
-    const data = snap.data();
-    if (!data?.answer) return;
-
-    if (pc.signalingState !== "have-local-offer") return;
-    if (pc.currentRemoteDescription) return;
-
-    await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-    flushQueue();
+  peer.on("open", async () => {
+    await getMedia();
   });
 
-  roomRef.collection("calleeCandidates").onSnapshot(snap => {
-    snap.docChanges().forEach(change => {
-      if (change.type === "added") {
-        const c = change.doc.data();
-        if (pc.remoteDescription) pc.addIceCandidate(new RTCIceCandidate(c));
-        else iceQueue.push(c);
-      }
+  peer.on("call", (incomingCall) => {
+    incomingCall.answer(localStream);
+
+    incomingCall.on("stream", (remoteStream) => {
+      document.getElementById("remoteVideo").srcObject = remoteStream;
     });
   });
 }
 
 async function joinCall() {
-  createPeer();
-  await getMedia();
+  const id = document.getElementById("room").value;
 
-  const roomRef = db.collection("rooms").doc(roomId);
-  const calleeCandidates = roomRef.collection("calleeCandidates");
+  peer = new Peer();
 
-  window.sendIce = c => calleeCandidates.add(c);
+  peer.on("open", async () => {
+    await getMedia();
 
-  const snap = await roomRef.get();
-  if (!snap.exists) return alert("Room not found");
+    call = peer.call(id, localStream);
 
-  const offer = snap.data().offer;
-
-  if (pc.signalingState !== "stable") return;
-
-  await pc.setRemoteDescription(new RTCSessionDescription(offer));
-
-  const answer = await pc.createAnswer();
-  await pc.setLocalDescription(answer);
-
-  await roomRef.update({ answer });
-
-  roomRef.collection("callerCandidates").onSnapshot(snap => {
-    snap.docChanges().forEach(change => {
-      if (change.type === "added") {
-        const c = change.doc.data();
-        if (pc.remoteDescription) pc.addIceCandidate(new RTCIceCandidate(c));
-        else iceQueue.push(c);
-      }
+    call.on("stream", (remoteStream) => {
+      document.getElementById("remoteVideo").srcObject = remoteStream;
     });
   });
 }
