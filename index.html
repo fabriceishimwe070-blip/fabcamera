@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Video Call</title>
+  <title>PeerJS Video Call</title>
   <style>
     body { text-align: center; font-family: Arial; background: #f2f2f2; }
     video { width: 300px; margin: 10px; background: black; border-radius: 10px; }
@@ -10,152 +10,63 @@
 </head>
 <body>
 
-<h2>WebRTC Video Call</h2>
+<h2>PeerJS Video Call</h2>
 
-<input id="room" placeholder="Enter Room ID">
+<input id="peerId" placeholder="Enter Friend ID">
 <br>
 
-<button onclick="startCall()">Start Call</button>
-<button onclick="joinCall()">Join Call</button>
+<button onclick="start()">Start (Get My ID)</button>
+<button onclick="callPeer()">Call</button>
 
 <br><br>
+
+<p>Your ID: <span id="myId">...</span></p>
 
 <video id="localVideo" autoplay muted playsinline></video>
 <video id="remoteVideo" autoplay playsinline></video>
 
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
 <script>
 let localStream;
-let pc;
-let ws;
-let room;
+let peer;
+let call;
 
-const config = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" }
-  ]
-};
+async function start() {
+  peer = new Peer(); // PeerJS cloud server
 
-async function getMedia() {
-  if (!localStream) {
-    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+  peer.on("open", async (id) => {
+    document.getElementById("myId").innerText = id;
+    console.log("My ID:", id);
+
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true
+    });
+
     document.getElementById("localVideo").srcObject = localStream;
-  }
-}
-
-function connectWS() {
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    console.log("Already connected");
-    return;
-  }
-
-  console.log("Connecting WebSocket...");
-
-  ws = new WebSocket("wss://fabcamera.onrender.com");
-
-  ws.onopen = () => {
-    console.log("WS CONNECTED");
-    ws.send(JSON.stringify({ type: "join", room }));
-  };
-
-  ws.onerror = (e) => {
-    console.log("WS ERROR", e);
-  };
-
-  ws.onclose = () => {
-    console.log("WS CLOSED - retrying...");
-    setTimeout(connectWS, 2000);
-  };
-
-  ws.onmessage = async (message) => {
-    const data = JSON.parse(message.data);
-    console.log("WS MESSAGE:", data);
-
-    if (!pc) return;
-
-    if (data.offer) {
-      console.log("OFFER RECEIVED");
-
-      await pc.setRemoteDescription(data.offer);
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-
-      ws.send(JSON.stringify({ type: "signal", room, answer }));
-    }
-
-    if (data.answer) {
-      console.log("ANSWER RECEIVED");
-      await pc.setRemoteDescription(data.answer);
-    }
-
-    if (data.candidate) {
-      try {
-        await pc.addIceCandidate(data.candidate);
-      } catch (e) {
-        console.log("ICE ERROR", e);
-      }
-    }
-  };
-}
-
-function createPeer() {
-  pc = new RTCPeerConnection(config);
-
-  localStream.getTracks().forEach(track => {
-    pc.addTrack(track, localStream);
   });
 
-  pc.ontrack = (event) => {
-    document.getElementById("remoteVideo").srcObject = event.streams[0];
-  };
+  peer.on("call", (incomingCall) => {
+    console.log("Incoming call");
 
-  pc.onicecandidate = (event) => {
-    if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
-        type: "signal",
-        room,
-        candidate: event.candidate
-      }));
-    }
-  };
+    incomingCall.answer(localStream);
+
+    incomingCall.on("stream", (remoteStream) => {
+      document.getElementById("remoteVideo").srcObject = remoteStream;
+    });
+  });
 }
 
-async function startCall() {
-  console.log("START CLICKED");
+function callPeer() {
+  const id = document.getElementById("peerId").value;
+  if (!id) return alert("Enter Friend ID");
 
-  room = document.getElementById("room").value;
-  if (!room) return alert("Enter Room ID");
+  call = peer.call(id, localStream);
 
-  await getMedia();
-  createPeer();
-  connectWS();
-
-  ws.onopen = async () => {
-    console.log("JOINING ROOM (HOST)");
-
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-
-    ws.send(JSON.stringify({
-      type: "signal",
-      room,
-      offer
-    }));
-  };
-}
-
-async function joinCall() {
-  console.log("JOIN CLICKED");
-
-  room = document.getElementById("room").value;
-  if (!room) return alert("Enter Room ID");
-
-  await getMedia();
-  createPeer();
-  connectWS();
-
-  ws.onopen = () => {
-    console.log("JOINING ROOM (GUEST)");
-  };
+  call.on("stream", (remoteStream) => {
+    document.getElementById("remoteVideo").srcObject = remoteStream;
+  });
 }
 </script>
 
