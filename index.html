@@ -28,44 +28,70 @@
 <script>
 let localStream;
 let peer;
-let call;
+let currentCall;
+
+const peerConfig = {
+  config: {
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" }
+    ]
+  }
+};
 
 async function getMedia() {
-  localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-  document.getElementById("localVideo").srcObject = localStream;
+  if (!localStream) {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    document.getElementById("localVideo").srcObject = localStream;
+  }
 }
 
-function startCall() {
+async function startCall() {
   const id = document.getElementById("room").value;
-  peer = new Peer(id);
+  if (!id) return alert("Enter Room ID");
 
-  peer.on("open", async () => {
-    await getMedia();
+  await getMedia();
+
+  peer = new Peer(id, peerConfig);
+
+  peer.on("open", () => {
+    console.log("Host ready");
   });
 
-  peer.on("call", (incomingCall) => {
-    incomingCall.answer(localStream);
-
-    incomingCall.on("stream", (remoteStream) => {
-      document.getElementById("remoteVideo").srcObject = remoteStream;
-    });
-  });
-}
-
-async function joinCall() {
-  const id = document.getElementById("room").value;
-
-  peer = new Peer();
-
-  peer.on("open", async () => {
-    await getMedia();
-
-    call = peer.call(id, localStream);
+  peer.on("call", (call) => {
+    call.answer(localStream);
 
     call.on("stream", (remoteStream) => {
       document.getElementById("remoteVideo").srcObject = remoteStream;
     });
+
+    currentCall = call;
   });
+
+  peer.on("error", (err) => console.log("Peer error:", err));
+}
+
+async function joinCall() {
+  const id = document.getElementById("room").value;
+  if (!id) return alert("Enter Room ID");
+
+  await getMedia();
+
+  peer = new Peer(undefined, peerConfig);
+
+  peer.on("open", (myId) => {
+    const call = peer.call(id, localStream);
+
+    call.on("stream", (remoteStream) => {
+      document.getElementById("remoteVideo").srcObject = remoteStream;
+    });
+
+    call.on("error", (err) => console.log("Call error:", err));
+
+    currentCall = call;
+  });
+
+  peer.on("error", (err) => console.log("Peer error:", err));
 }
 </script>
 
