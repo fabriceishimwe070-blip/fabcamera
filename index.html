@@ -28,58 +28,42 @@
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 
 <script>
-let localStream;
 let peer;
-let currentCall;
+let localStream;
 
 async function start() {
+  localStream = await navigator.mediaDevices.getUserMedia({
+    video: true,
+    audio: true
+  });
+
+  document.getElementById("localVideo").srcObject = localStream;
+
   peer = new Peer();
 
-  peer.on("open", async (id) => {
+  peer.on("open", (id) => {
     document.getElementById("myId").innerText = id;
-
-    localStream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true
-    });
-
-    const localVideo = document.getElementById("localVideo");
-    localVideo.srcObject = localStream;
-    localVideo.onloadedmetadata = () => {
-      localVideo.play();
-    };
   });
 
   peer.on("call", (call) => {
     call.answer(localStream);
 
     call.on("stream", (remoteStream) => {
-      const remoteVideo = document.getElementById("remoteVideo");
-      remoteVideo.srcObject = remoteStream;
-      remoteVideo.onloadedmetadata = () => {
-        remoteVideo.play().catch(() => {});
-      };
+      document.getElementById("remoteVideo").srcObject = remoteStream;
+      document.getElementById("remoteVideo").play();
     });
-
-    currentCall = call;
   });
 }
 
 function callPeer() {
   const id = document.getElementById("peerId").value;
-  if (!id) return alert("Enter Friend ID");
 
   const call = peer.call(id, localStream);
 
   call.on("stream", (remoteStream) => {
-    const remoteVideo = document.getElementById("remoteVideo");
-    remoteVideo.srcObject = remoteStream;
-    remoteVideo.onloadedmetadata = () => {
-      remoteVideo.play().catch(() => {});
-    };
+    document.getElementById("remoteVideo").srcObject = remoteStream;
+    document.getElementById("remoteVideo").play();
   });
-
-  currentCall = call;
 }
 </script>
 
