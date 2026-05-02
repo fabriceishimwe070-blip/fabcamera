@@ -3,515 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PeerLink — Video Call</title>
+  <title>FAB-CAMERA</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg: #0a0a0f;
-      --surface: #12121a;
-      --panel: #1a1a26;
-      --border: #2a2a40;
-      --accent: #5b4fff;
-      --accent2: #ff4f9a;
-      --green: #00e5a0;
-      --text: #e8e8f0;
-      --muted: #7070a0;
-      --danger: #ff4b4b;
-    }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Syne', sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      overflow-x: hidden;
-    }
-
-    /* Animated background grid */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(91,79,255,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(91,79,255,0.04) 1px, transparent 1px);
-      background-size: 40px 40px;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    /* Glow orbs */
-    body::after {
-      content: '';
-      position: fixed;
-      top: -200px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 700px;
-      height: 400px;
-      background: radial-gradient(ellipse, rgba(91,79,255,0.15) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .container {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 960px;
-      padding: 0 20px 60px;
-    }
-
-    /* Header */
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 28px 0 36px;
-    }
-
-    .logo {
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .status-badge {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 100px;
-      padding: 6px 14px;
-      font-family: 'Space Mono', monospace;
-      font-size: 11px;
-      color: var(--muted);
-      transition: all 0.3s;
-    }
-
-    .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--muted);
-      transition: all 0.3s;
-    }
-
-    .status-badge.connected .status-dot {
-      background: var(--green);
-      box-shadow: 0 0 8px var(--green);
-      animation: pulse 2s infinite;
-    }
-
-    .status-badge.connected { color: var(--green); border-color: rgba(0,229,160,0.3); }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-
-    /* Setup panel */
-    .setup-panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 32px;
-      margin-bottom: 28px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      align-items: end;
-    }
-
-    .field-group {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    .id-display {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 16px;
-      font-family: 'Space Mono', monospace;
-      font-size: 14px;
-      color: var(--accent);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      min-height: 48px;
-      gap: 10px;
-    }
-
-    .id-text {
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .copy-btn {
-      background: none;
-      border: none;
-      color: var(--muted);
-      cursor: pointer;
-      padding: 4px;
-      border-radius: 6px;
-      transition: color 0.2s, background 0.2s;
-      flex-shrink: 0;
-    }
-
-    .copy-btn:hover { color: var(--accent); background: rgba(91,79,255,0.1); }
-
-    input[type="text"] {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 16px;
-      font-family: 'Space Mono', monospace;
-      font-size: 13px;
-      color: var(--text);
-      width: 100%;
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      min-height: 48px;
-    }
-
-    input[type="text"]:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(91,79,255,0.15);
-    }
-
-    input[type="text"]::placeholder { color: var(--muted); }
-
-    .btn-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 4px;
-    }
-
-    .btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px 22px;
-      border-radius: 10px;
-      border: none;
-      font-family: 'Syne', sans-serif;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      white-space: nowrap;
-      flex: 1;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), #7b6aff);
-      color: white;
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(91,79,255,0.4);
-    }
-
-    .btn-call {
-      background: linear-gradient(135deg, var(--green), #00c888);
-      color: #001a10;
-    }
-
-    .btn-call:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,229,160,0.35);
-    }
-
-    .btn-end {
-      background: linear-gradient(135deg, var(--danger), #ff2222);
-      color: white;
-    }
-
-    .btn-end:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(255,75,75,0.4);
-    }
-
-    .btn:disabled {
-      opacity: 0.35;
-      cursor: not-allowed;
-      transform: none !important;
-      box-shadow: none !important;
-    }
-
-    .btn svg { flex-shrink: 0; }
-
-    /* Video area */
-    .video-stage {
-      position: relative;
-      border-radius: 20px;
-      overflow: hidden;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      aspect-ratio: 16/9;
-      width: 100%;
-    }
-
-    #remoteVideo {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      background: var(--surface);
-    }
-
-    .empty-state {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      color: var(--muted);
-      pointer-events: none;
-      transition: opacity 0.3s;
-    }
-
-    .empty-state svg { opacity: 0.3; }
-
-    .empty-state p {
-      font-size: 15px;
-      font-weight: 600;
-      opacity: 0.5;
-    }
-
-    .empty-state small {
-      font-size: 12px;
-      opacity: 0.35;
-      font-family: 'Space Mono', monospace;
-    }
-
-    .empty-state.hidden { opacity: 0; }
-
-    /* PiP local video */
-    .local-pip {
-      position: absolute;
-      bottom: 18px;
-      right: 18px;
-      width: 160px;
-      aspect-ratio: 4/3;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 2px solid rgba(255,255,255,0.15);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-      background: #000;
-      z-index: 10;
-      transition: all 0.3s;
-    }
-
-    .local-pip:hover { transform: scale(1.04); }
-
-    #localVideo {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      transform: scaleX(-1);
-    }
-
-    .pip-label {
-      position: absolute;
-      bottom: 6px;
-      left: 8px;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      color: rgba(255,255,255,0.7);
-      text-transform: uppercase;
-      font-family: 'Space Mono', monospace;
-    }
-
-    /* Controls bar */
-    .controls-bar {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
-      padding: 20px 0 0;
-    }
-
-    .ctrl-btn {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-    }
-
-    .ctrl-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(91,79,255,0.1); }
-    .ctrl-btn.active { background: var(--danger); border-color: var(--danger); color: white; }
-    .ctrl-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-    /* Toast */
-    .toast {
-      position: fixed;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 100px;
-      padding: 12px 22px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      z-index: 1000;
-      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
-    }
-
-    .toast.show { transform: translateX(-50%) translateY(0); }
-    .toast.success { border-color: rgba(0,229,160,0.4); color: var(--green); }
-    .toast.error { border-color: rgba(255,75,75,0.4); color: var(--danger); }
-
-    /* Incoming call overlay */
-    .incoming-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.75);
-      backdrop-filter: blur(8px);
-      z-index: 500;
-      display: none;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .incoming-overlay.show { display: flex; }
-
-    .incoming-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 40px 48px;
-      text-align: center;
-      animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
-    }
-
-    @keyframes popIn {
-      from { transform: scale(0.7); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-
-    .ring-icon {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      margin: 0 auto 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      animation: ring 1.2s ease-in-out infinite;
-    }
-
-    @keyframes ring {
-      0%, 100% { transform: rotate(-8deg); }
-      50% { transform: rotate(8deg); }
-    }
-
-    .incoming-card h3 {
-      font-size: 20px;
-      font-weight: 800;
-      margin-bottom: 6px;
-    }
-
-    .incoming-card p {
-      font-size: 13px;
-      color: var(--muted);
-      font-family: 'Space Mono', monospace;
-      margin-bottom: 28px;
-    }
-
-    .incoming-actions { display: flex; gap: 14px; justify-content: center; }
-
-    .btn-accept {
-      background: linear-gradient(135deg, var(--green), #00c888);
-      color: #001a10;
-      padding: 14px 28px;
-      border-radius: 100px;
-      border: none;
-      font-family: 'Syne', sans-serif;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .btn-accept:hover { transform: scale(1.05); box-shadow: 0 8px 24px rgba(0,229,160,0.4); }
-
-    .btn-decline {
-      background: rgba(255,75,75,0.15);
-      color: var(--danger);
-      border: 1px solid rgba(255,75,75,0.3);
-      padding: 14px 28px;
-      border-radius: 100px;
-      font-family: 'Syne', sans-serif;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .btn-decline:hover { background: rgba(255,75,75,0.25); }
-
-    @media (max-width: 600px) {
-      .setup-panel { grid-template-columns: 1fr; }
-      .local-pip { width: 110px; }
-    }
-  </style>
+ <link rel="stylesheet" href="index.css">
 </head>
 <body>
 
 <div class="container">
   <header>
-    <div class="logo">PeerLink</div>
+    <div class="logo">ISHIMWE</div>
     <div class="status-badge" id="statusBadge">
       <div class="status-dot"></div>
       <span id="statusText">Offline</span>
     </div>
   </header>
 
-  <!-- Setup Panel -->
+ 
   <div class="setup-panel">
     <div class="field-group">
       <label>Your Peer ID</label>
@@ -532,7 +39,7 @@
     </div>
 
     <div class="field-group">
-      <label>Call Someone</label>
+      <label>Call Friends</label>
       <input type="text" id="peerId" placeholder="Paste friend's Peer ID…">
       <div class="btn-row">
         <button class="btn btn-call" id="callBtn" onclick="callPeer()" disabled>
@@ -547,7 +54,7 @@
     </div>
   </div>
 
-  <!-- Video Stage -->
+  
   <div class="video-stage">
     <video id="remoteVideo" autoplay playsinline></video>
 
@@ -565,7 +72,7 @@
     </div>
   </div>
 
-  <!-- Controls -->
+  
   <div class="controls-bar">
     <button class="ctrl-btn" id="muteBtn" onclick="toggleMute()" disabled title="Mute mic">
       <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -586,7 +93,7 @@
   </div>
 </div>
 
-<!-- Incoming Call Overlay -->
+
 <div class="incoming-overlay" id="incomingOverlay">
   <div class="incoming-card">
     <div class="ring-icon">
@@ -603,7 +110,7 @@
   </div>
 </div>
 
-<!-- Toast -->
+
 <div class="toast" id="toast"></div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -611,7 +118,7 @@
   let peer, localStream, activeCall, pendingCall;
   let isMuted = false, isVideoOff = false;
 
-  // ── Toast ──────────────────────────────────────────────
+ 
   function showToast(msg, type = '') {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -620,7 +127,7 @@
     setTimeout(() => t.classList.remove('show'), 3000);
   }
 
-  // ── Start Peer ─────────────────────────────────────────
+
   async function startPeer() {
     const btn = document.getElementById('startBtn');
     btn.disabled = true;
@@ -631,7 +138,29 @@
       document.getElementById('localVideo').srcObject = localStream;
       document.getElementById('localPip').style.display = 'block';
 
-      peer = new Peer();
+      peer = new Peer(undefined, {
+  config: {
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+      {
+        urls: "turn:openrelay.metered.ca:80",
+        username: "openrelayproject",
+        credential: "openrelayproject"
+      },
+      {
+        urls: "turn:openrelay.metered.ca:443",
+        username: "openrelayproject",
+        credential: "openrelayproject"
+      },
+      {
+        urls: "turn:openrelay.metered.ca:443?transport=tcp",
+        username: "openrelayproject",
+        credential: "openrelayproject"
+      }
+    ]
+  }
+});
 
       peer.on('open', (id) => {
         document.getElementById('myId').textContent = id;
@@ -661,7 +190,7 @@
     }
   }
 
-  // ── Call ───────────────────────────────────────────────
+ 
   function callPeer() {
     const id = document.getElementById('peerId').value.trim();
     if (!id) { showToast('Enter a Peer ID to call.', 'error'); return; }
@@ -679,7 +208,7 @@
     document.getElementById('endBtn').disabled = false;
   }
 
-  // ── Accept / Decline ───────────────────────────────────
+ 
   function acceptCall() {
     document.getElementById('incomingOverlay').classList.remove('show');
     if (!pendingCall) return;
@@ -698,7 +227,7 @@
     showToast('Call declined.');
   }
 
-  // ── Stream Handlers ────────────────────────────────────
+
   function setupCallHandlers(call) {
     call.on('stream', (remoteStream) => {
       const rv = document.getElementById('remoteVideo');
@@ -720,7 +249,7 @@
     });
   }
 
-  // ── End Call ───────────────────────────────────────────
+
   function endCall() {
     if (activeCall) activeCall.close();
     hangupUI();
@@ -736,7 +265,7 @@
     setStatus('connected', 'Ready');
   }
 
-  // ── Controls ───────────────────────────────────────────
+  
   function toggleMute() {
     if (!localStream) return;
     isMuted = !isMuted;
@@ -762,14 +291,14 @@
     }
   }
 
-  // ── Copy ID ────────────────────────────────────────────
+  
   function copyId() {
     const id = document.getElementById('myId').textContent;
     if (id === '—') { showToast('Start camera to get your ID first.', 'error'); return; }
     navigator.clipboard.writeText(id).then(() => showToast('ID copied!', 'success'));
   }
 
-  // ── Status ─────────────────────────────────────────────
+  
   function setStatus(type, text) {
     const badge = document.getElementById('statusBadge');
     const label = document.getElementById('statusText');
