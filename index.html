@@ -41,51 +41,59 @@ const roomId = prompt("Enter Room ID");
 const servers = {
   iceServers: [
     { urls: ["stun:stun1.l.google.com:19302", "stun:stun2.l.google.com:19302"] }
-  ],
-  iceCandidatePoolSize: 10,
+  ]
 };
 
-let pc = new RTCPeerConnection(servers);
-let localStream = null;
-let remoteStream = null;
-
-pc.oniceconnectionstatechange = () => {
-  console.log(pc.iceConnectionState);
-};
+let pc;
+let localStream;
+let remoteStream;
 
 async function getMedia() {
-  try {
-    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    remoteStream = new MediaStream();
+  localStream = await navigator.mediaDevices.getUserMedia({
+    video: true,
+    audio: true
+  });
 
-    localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
+  remoteStream = new MediaStream();
 
-    pc.ontrack = (event) => {
-      event.streams[0].getTracks().forEach((track) => {
-        remoteStream.addTrack(track);
-      });
-    };
+  document.getElementById("localVideo").srcObject = localStream;
+  document.getElementById("remoteVideo").srcObject = remoteStream;
+}
 
-    document.getElementById("localVideo").srcObject = localStream;
-    document.getElementById("remoteVideo").srcObject = remoteStream;
+function createPeer(roomRef, isCaller) {
+  pc = new RTCPeerConnection(servers);
 
-  } catch (err) {
-    alert(err.message);
-    console.error(err);
-  }
+  localStream.getTracks().forEach(track => {
+    pc.addTrack(track, localStream);
+  });
+
+  pc.ontrack = (event) => {
+    event.streams[0].getTracks().forEach(track => {
+      remoteStream.addTrack(track);
+    });
+  };
+
+  const candidatesRef = roomRef.collection(
+    isCaller ? "callerCandidates" : "calleeCandidates"
+  );
+
+  pc.onicecandidate = (event) => {
+    if (event.candidate) {
+      candidatesRef.add(event.candidate.toJSON());
+    }
+  };
+
+  pc.onconnectionstatechange = () => {
+    console.log("Connection:", pc.connectionState);
+  };
 }
 
 async function startCall() {
   await getMedia();
 
   const roomRef = db.collection("rooms").doc(roomId);
-  const callerCandidates = roomRef.collection("callerCandidates");
 
-  pc.onicecandidate = (event) => {
-    if (event.candidate) {
-      callerCandidates.add(event.candidate.toJSON());
-    }
-  };
+  createPeer(roomRef, true);
 
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
@@ -97,15 +105,15 @@ async function startCall() {
     }
   });
 
-  roomRef.onSnapshot(async (snapshot) => {
+  roomRef.onSnapshot(async snapshot => {
     const data = snapshot.data();
-    if (!pc.currentRemoteDescription && data?.answer) {
+    if (data?.answer && !pc.currentRemoteDescription) {
       await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
     }
   });
 
-  roomRef.collection("calleeCandidates").onSnapshot((snapshot) => {
-    snapshot.docChanges().forEach((change) => {
+  roomRef.collection("calleeCandidates").onSnapshot(snapshot => {
+    snapshot.docChanges().forEach(change => {
       if (change.type === "added") {
         pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
       }
@@ -117,19 +125,15 @@ async function joinCall() {
   await getMedia();
 
   const roomRef = db.collection("rooms").doc(roomId);
-  const calleeCandidates = roomRef.collection("calleeCandidates");
-
-  pc.onicecandidate = (event) => {
-    if (event.candidate) {
-      calleeCandidates.add(event.candidate.toJSON());
-    }
-  };
 
   const roomSnapshot = await roomRef.get();
+
   if (!roomSnapshot.exists) {
     alert("Room does not exist");
     return;
   }
+
+  createPeer(roomRef, false);
 
   const data = roomSnapshot.data();
 
@@ -145,8 +149,8 @@ async function joinCall() {
     }
   });
 
-  roomRef.collection("callerCandidates").onSnapshot((snapshot) => {
-    snapshot.docChanges().forEach((change) => {
+  roomRef.collection("callerCandidates").onSnapshot(snapshot => {
+    snapshot.docChanges().forEach(change => {
       if (change.type === "added") {
         pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
       }
