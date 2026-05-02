@@ -1,18 +1,17 @@
 const WebSocket = require("ws");
 
-const wss = new WebSocket.Server({ port: 3000 });
+const PORT = process.env.PORT;
+
+const wss = new WebSocket.Server({ port: PORT });
 
 const rooms = {};
 
 wss.on("connection", (ws) => {
   ws.on("message", (message) => {
     const data = JSON.parse(message);
-
     const room = data.room;
 
-    if (!rooms[room]) {
-      rooms[room] = [];
-    }
+    if (!rooms[room]) rooms[room] = [];
 
     if (data.type === "join") {
       rooms[room].push(ws);
@@ -36,4 +35,4 @@ wss.on("connection", (ws) => {
   });
 });
 
-console.log("WebSocket server running on ws://localhost:3000");
+console.log("WebSocket running on port", PORT);
