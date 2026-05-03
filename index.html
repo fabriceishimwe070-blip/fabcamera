@@ -174,9 +174,11 @@
       });
 
       peer.on('call', (call) => {
+        document.getElementById("fab").play();
         pendingCall = call;
         document.getElementById('callerIdText').textContent = call.peer;
         document.getElementById('incomingOverlay').classList.add('show');
+
       });
 
       peer.on('error', (err) => {
@@ -204,8 +206,6 @@
     setupCallHandlers(call);
     setStatus('connected', 'Calling…');
     showToast('Calling ' + id + '…');
- let aud = document.getElementById("fab");
-     aud.play();
     document.getElementById('callBtn').disabled = true;
     document.getElementById('endBtn').disabled = false;
   }
@@ -221,6 +221,9 @@
     document.getElementById('endBtn').disabled = false;
     document.getElementById('callBtn').disabled = true;
     showToast('Call connected!', 'success');
+    let aud = document.getElementById("fab");
+    aud.pause();
+    aud.currentTime = 0;
   }
 
   function declineCall() {
