@@ -106,6 +106,7 @@
     <div class="incoming-actions">
       <button class="btn-accept" onclick="acceptCall()">Accept</button>
       <button class="btn-decline" onclick="declineCall()">Decline</button>
+     <audio id="fab" src="iphone-ringtone.mp3" loop></audio>
     </div>
   </div>
 </div>
@@ -219,6 +220,8 @@
     document.getElementById('endBtn').disabled = false;
     document.getElementById('callBtn').disabled = true;
     showToast('Call connected!', 'success');
+    let aud = document.getElementById("fab");
+     aud.play();
   }
 
   function declineCall() {
