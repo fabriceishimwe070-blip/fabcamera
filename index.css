@@ -1,5 +1,4 @@
-<style>
-    
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
@@ -345,4 +344,6 @@
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .toast.success { border-color: rgba(0,229,160,0.4); color: var(--accent); }
     .toast.error   { border-color: rgba(255,68,68,0.4);  color: var(--danger); }
+
+   
   

@@ -1,0 +1,37 @@
+ body{
+    overflow: hidden;
+    padding: 0;
+ }
+ .main2{
+      background-color: white;
+      display: flex;
+      gap: 10px;
+      height: 80vh;
+      padding: 20px;
+      
+      overflow: hidden;
+      border: 2px solid rgb(173, 255, 47,0.3);
+      
+    }
+   
+    .left{
+      height: 700px;
+      width: 10%;
+      border-right: 4px solid rgb(12, 12, 12,0.3);
+      overflow: hidden;
+      padding: 5px;
+    }
+    .left::-webkit-scrollbar {
+    display: none;
+}
+    .right{
+      height: 100%;
+      width: 80%;
+       padding: 5px;
+    }
+    .all{
+        display: flex;
+        flex-direction: column;
+        background-color: none;
+        gap: none;
+    }
