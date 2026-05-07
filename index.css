@@ -378,7 +378,7 @@ gap: 20px;
     .toast.success { border-color: rgba(0,229,160,0.4); color: var(--green); }
     .toast.error { border-color: rgba(255,75,75,0.4); color: var(--danger); }
 
-    /* Incoming call overlay */
+  
     .incoming-overlay {
       position: fixed;
       inset: 0;
