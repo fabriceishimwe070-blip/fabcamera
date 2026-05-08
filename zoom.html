@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Google Meet</title>
+
+  <style>
+    body{
+      font-family: Arial;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+      background:#f5f5f5;
+      flex-direction:column;
+      gap:20px;
+    }
+
+    .box{
+      background:white;
+      padding:30px;
+      border-radius:15px;
+      text-align:center;
+      width:350px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    input{
+      width:100%;
+      padding:12px;
+      border:1px solid #ccc;
+      border-radius:10px;
+      margin-bottom:15px;
+      font-size:16px;
+    }
+
+    button{
+      padding:12px 20px;
+      border:none;
+      border-radius:10px;
+      cursor:pointer;
+      font-size:16px;
+      margin:5px;
+      background:#0b57d0;
+      color:white;
+    }
+
+    button:hover{
+      opacity:0.9;
+    }
+  </style>
+</head>
+<body>
+
+<div class="box">
+
+  <h2>Create Google Meet</h2>
+
+  <input type="text" id="meetLink" readonly>
+
+  <button onclick="createMeet()">
+    Create Meeting
+  </button>
+
+  <button onclick="copyLink()">
+    Copy Link
+  </button>
+
+  <button onclick="joinMeet()">
+    Join Meeting
+  </button>
+
+</div>
+
+<script>
+
+function createMeet(){
+
+  const randomCode =
+    Math.random().toString(36).substring(2,5)
+    + "-"
+    + Math.random().toString(36).substring(2,6)
+    + "-"
+    + Math.random().toString(36).substring(2,5);
+
+  const link = "https://meet.google.com/" + randomCode;
+
+  document.getElementById("meetLink").value = link;
+}
+
+function copyLink(){
+
+  const input = document.getElementById("meetLink");
+
+  input.select();
+
+  document.execCommand("copy");
+
+  alert("Link copied!");
+}
+
+function joinMeet(){
+
+  const link = document.getElementById("meetLink").value;
+
+  if(link){
+    window.open(link, "_blank");
+  }
+}
+
+</script>
+
+</body>
+</html>

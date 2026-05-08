@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spark Chat</title>
+  <link rel="stylesheet" href="home.css" />
+
+
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+  
+  <div id="join-screen" class="screen active">
+    <div class="join-card">
+      <div class="brand">
+        <span class="brand-icon">⚡</span>
+        <h1>Spark<span>Chat</span></h1>
+      </div>
+      <p class="tagline">Private rooms. Real-time messages. Zero fuss.</p>
+
+      <div class="field">
+        <label for="username-input">Your name</label>
+        <input id="username-input" type="text" placeholder="e.g. Alex" maxlength="20" autocomplete="off" />
+      </div>
+
+      <div class="field">
+        <label for="room-input">Room ID</label>
+        <input id="room-input" type="text" placeholder="e.g. ocean-7" maxlength="30" autocomplete="off" />
+        <small></small>
+      </div>
+
+      <button id="join-btn" class="btn-primary">Enter Room →</button>
+
+      <p id="join-error" class="error-msg hidden"></p>
+    </div>
+  </div>
+
+  
+  <div id="chat-screen" class="screen">
+
+    
+    <header class="chat-header">
+      <div class="header-left">
+        <span class="brand-icon-sm">⚡</span>
+        <div>
+          <span id="room-label" class="room-name"></span>
+          <span class="room-sub">private room</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <span id="username-badge" class="user-badge"></span>
+        <button id="leave-btn" title="Leave room">✕</button>
+      </div>
+    </header>
+
+    
+    <main id="messages-container" class="messages-container">
+      <div id="messages-list" class="messages-list">
+        
+      </div>
+    </main>
+
+   
+    <footer class="chat-footer">
+      <div class="input-row">
+        <textarea
+          id="message-input"
+          placeholder="Type a message…"
+          rows="1"
+          maxlength="500"
+          autocomplete="off"
+        ></textarea>
+        <button id="send-btn" class="send-btn" title="Send">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+      <p class="char-counter"><span id="char-count">0</span>/500</p>
+    </footer>
+
+  </div>
+
+  
+  <div id="toast" class="toast hidden"></div>
+
+  <script>
+   
+const firebaseConfig = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
+
+
+
+
+
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+
+
+const state = {
+  username:    "",   
+  roomId:      "",   
+  unsubscribe: null 
+};
+
+
+
+const joinScreen     = document.getElementById("join-screen");
+const chatScreen     = document.getElementById("chat-screen");
+const usernameInput  = document.getElementById("username-input");
+const roomInput      = document.getElementById("room-input");
+const joinBtn        = document.getElementById("join-btn");
+const joinError      = document.getElementById("join-error");
+const messagesList   = document.getElementById("messages-list");
+const messagesContainer = document.getElementById("messages-container");
+const messageInput   = document.getElementById("message-input");
+const sendBtn        = document.getElementById("send-btn");
+const charCount      = document.getElementById("char-count");
+const roomLabel      = document.getElementById("room-label");
+const usernameBadge  = document.getElementById("username-badge");
+const leaveBtn       = document.getElementById("leave-btn");
+const toastEl        = document.getElementById("toast");
+
+
+
+joinBtn.addEventListener("click", joinRoom);
+
+// Also allow pressing Enter on the room input to join
+roomInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") joinRoom();
+});
+
+function joinRoom() {
+  const name = usernameInput.value.trim();
+  const room = roomInput.value.trim().toLowerCase().replace(/\s+/g, "-");
+
+
+  if (!name) {
+    showError("Please enter your name.");
+    usernameInput.focus();
+    return;
+  }
+  if (!room) {
+    showError("Please enter a room ID.");
+    roomInput.focus();
+    return;
+  }
+
+ 
+  state.username = name;
+  state.roomId   = room;
+
+  
+  roomLabel.textContent    = `#${room}`;
+  usernameBadge.textContent = name;
+
+ 
+  
+  joinScreen.classList.remove("active");
+  chatScreen.classList.add("active");
+
+  
+  postSystemMessage(`${name} joined the room`);
+  listenForMessages();
+
+  messageInput.focus();
+}
+
+function showError(msg) {
+  joinError.textContent = msg;
+  joinError.classList.remove("hidden");
+}
+
+
+
+leaveBtn.addEventListener("click", leaveRoom);
+
+function leaveRoom() {
+  // Post a system message before leaving
+  postSystemMessage(`${state.username} left the room`);
+
+  // Detach the real-time listener to avoid memory leaks
+  if (state.unsubscribe) {
+    state.unsubscribe();
+    state.unsubscribe = null;
+  }
+
+
+  messagesList.innerHTML = "";
+
+ 
+  chatScreen.classList.remove("active");
+  joinScreen.classList.add("active");
+}
+
+
+
+sendBtn.addEventListener("click", sendMessage);
+
+// Send on Enter (but allow Shift+Enter for a new line)
+messageInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault(); // stop newline from being inserted
+    sendMessage();
+  }
+});
+
+
+messageInput.addEventListener("input", () => {
+  // Auto-resize
+  messageInput.style.height = "auto";
+  messageInput.style.height = messageInput.scrollHeight + "px";
+
+  // Character counter
+  const len = messageInput.value.length;
+  charCount.textContent = len;
+  charCount.style.color = len > 450 ? "#e05c5c" : ""; // turn red near limit
+});
+
+async function sendMessage() {
+  const text = messageInput.value.trim();
+  if (!text) return;
+
+  
+  sendBtn.disabled = true;
+
+  try {
+  
+    await db
+      .collection("chats")
+      .doc(state.roomId)
+      .collection("messages")
+      .add({
+        text:      text,
+        sender:    state.username,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      
+      });
+
+    
+    messageInput.value = "";
+    messageInput.style.height = "auto";
+    charCount.textContent = "0";
+
+  } catch (err) {
+    console.error("Failed to send message:", err);
+    showToast("⚠️ Couldn't send. Check your connection.");
+  }
+
+  sendBtn.disabled = false;
+  messageInput.focus();
+}
+
+
+
+function listenForMessages() {
+  
+  state.unsubscribe = db
+    .collection("chats")
+    .doc(state.roomId)
+    .collection("messages")
+    .orderBy("timestamp", "asc")      // oldest first
+    .onSnapshot((snapshot) => {
+      /*
+        snapshot.docChanges() gives us only the CHANGES since the last
+        snapshot, not the full list every time.
+        For the first call it returns all existing documents as "added".
+      */
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          renderMessage(change.doc.data());
+        }
+       
+      });
+    },
+    (error) => {
+      console.error("Firestore listener error:", error);
+      showToast("⚠️ Connection error. Refresh the page.");
+    });
+}
+
+
+
+async function postSystemMessage(text) {
+  try {
+    await db
+      .collection("chats")
+      .doc(state.roomId)
+      .collection("messages")
+      .add({
+        text:      text,
+        sender:    "__system__",
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+  } catch (err) {
+    // System messages are nice-to-have; silently ignore failures.
+    console.warn("Could not post system message:", err);
+  }
+}
+
+
+
+function renderMessage(data) {
+  const { text, sender, timestamp } = data;
+
+  // --- Determine bubble type ---
+  let type;
+  if (sender === "__system__") {
+    type = "system";
+  } else if (sender === state.username) {
+    type = "me";
+  } else {
+    type = "them";
+  }
+
+  // --- Build the DOM element ---
+  const msgEl = document.createElement("div");
+  msgEl.classList.add("message", type);
+
+  // Format timestamp (may be null briefly before server sets it)
+  const timeStr = timestamp
+    ? new Date(timestamp.toDate()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : "";
+
+  if (type === "system") {
+    msgEl.innerHTML = `<div class="bubble">${escapeHtml(text)}</div>`;
+  } else {
+    msgEl.innerHTML = `
+      <div class="bubble">${escapeHtml(text)}</div>
+      <span class="msg-meta">${type === "them" ? escapeHtml(sender) + " · " : ""}${timeStr}</span>
+    `;
+  }
+
+  messagesList.appendChild(msgEl);
+
+  // --- Auto-scroll to the latest message ---
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+
+
+function escapeHtml(str) {
+  const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+  return String(str).replace(/[&<>"']/g, (c) => map[c]);
+}
+
+
+
+let toastTimer;
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.remove("hidden");
+  toastEl.classList.add("show");
+
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toastEl.classList.remove("show");
+    setTimeout(() => toastEl.classList.add("hidden"), 200);
+  }, 3000);
+}
+
+
+   </script>
+</body>
+</html>
