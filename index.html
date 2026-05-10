@@ -1,1025 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>VideoMeet — Instant Rooms</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-<style>
-:root {
-  --bg: #06080f;
-  --surface: #0d1117;
-  --surface2: #161b27;
-  --surface3: #1e2535;
-  --border: rgba(255,255,255,0.08);
-  --accent: #3b82f6;
-  --accent-bright: #60a5fa;
-  --accent-glow: rgba(59,130,246,0.2);
-  --green: #22c55e;
-  --red: #ef4444;
-  --yellow: #f59e0b;
-  --text: #e2e8f0;
-  --muted: #64748b;
-  --muted2: #94a3b8;
-  --r: 12px;
-}
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { min-height: 100%; font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
-button { cursor: pointer; border: none; outline: none; font-family: inherit; }
-input { font-family: 'JetBrains Mono', monospace; outline: none; border: none; }
-
-/* ─── Background ─────────────────────────────── */
-.bg {
-  position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
-}
-.bg-mesh {
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse 80% 60% at 10% 0%, rgba(59,130,246,0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 90% 100%, rgba(99,102,241,0.1) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 40% at 50% 50%, rgba(15,23,42,0.8) 0%, transparent 100%);
-}
-.bg-grid {
-  position: absolute; inset: 0;
-  background-image: linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-/* ─── Landing ─────────────────────────────────── */
-#landing {
-  position: relative; z-index: 10;
-  min-height: 100vh;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 3rem 1.5rem;
-  transition: opacity 0.3s, transform 0.3s;
-}
-#landing.hiding { opacity: 0; transform: scale(0.97); pointer-events: none; }
-
-.brand {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 2.5rem;
-}
-.brand-icon {
-  width: 40px; height: 40px; border-radius: 10px;
-  background: linear-gradient(135deg, var(--accent), #6366f1);
-  display: flex; align-items: center; justify-content: center;
-}
-.brand-icon svg { width: 20px; height: 20px; fill: #fff; }
-.brand-name { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
-.brand-name b { color: var(--accent-bright); }
-
-.headline {
-  font-size: clamp(2.2rem, 5vw, 3.5rem);
-  font-weight: 700; text-align: center; line-height: 1.1;
-  letter-spacing: -1.5px; margin-bottom: 0.8rem;
-}
-.headline span { color: var(--accent-bright); }
-
-.subline {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.85rem; color: var(--muted); text-align: center; margin-bottom: 2.5rem;
-}
-
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 2rem;
-  width: min(440px, 100%);
-  box-shadow: 0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.05);
-}
-
-.tabs {
-  display: flex; gap: 4px; margin-bottom: 1.6rem;
-  background: var(--bg); border-radius: 8px; padding: 4px;
-}
-.tab-btn {
-  flex: 1; padding: 0.55rem; border-radius: 5px;
-  font-size: 0.85rem; font-weight: 600; color: var(--muted);
-  background: transparent; transition: all 0.2s; font-family: 'Space Grotesk', sans-serif;
-}
-.tab-btn.active { background: var(--surface2); color: var(--text); }
-
-.tab-panel { display: none; }
-.tab-panel.active { display: block; }
-
-.field { margin-bottom: 1.1rem; }
-.field label {
-  display: block; font-size: 0.73rem; font-weight: 600;
-  color: var(--muted2); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.4rem;
-}
-.input-row {
-  display: flex; align-items: center;
-  background: var(--bg); border: 1px solid var(--border);
-  border-radius: 8px; padding: 0 0.85rem;
-  transition: border-color 0.2s;
-}
-.input-row:focus-within { border-color: var(--accent); }
-.input-row input {
-  flex: 1; background: none; color: var(--text);
-  padding: 0.75rem 0.4rem; font-size: 0.9rem;
-}
-.input-row input::placeholder { color: var(--muted); }
-.icon-btn {
-  background: none; color: var(--muted); font-size: 0.9rem;
-  padding: 4px; border-radius: 4px; transition: color 0.2s;
-}
-.icon-btn:hover { color: var(--accent-bright); }
-
-.btn-main {
-  width: 100%; padding: 0.9rem;
-  background: var(--accent); color: #fff;
-  font-weight: 700; font-size: 0.95rem; border-radius: 8px;
-  transition: all 0.2s; letter-spacing: 0.01em;
-  box-shadow: 0 4px 16px rgba(59,130,246,0.3);
-  font-family: 'Space Grotesk', sans-serif;
-}
-.btn-main:hover { background: var(--accent-bright); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(59,130,246,0.4); }
-.btn-main:active { transform: translateY(0); }
-.btn-main:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-.features {
-  display: flex; gap: 1.5rem; margin-top: 2rem;
-  justify-content: center; flex-wrap: wrap;
-}
-.feature {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 0.8rem; color: var(--muted);
-}
-.feature-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
-
-/* ─── Meeting ─────────────────────────────────── */
-#meeting {
-  position: fixed; inset: 0; z-index: 20;
-  display: flex; flex-direction: column;
-  background: var(--bg);
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.3s, transform 0.3s;
-  transform: scale(1.02);
-}
-#meeting.visible { opacity: 1; pointer-events: all; transform: scale(1); }
-
-.topbar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0.7rem 1.2rem;
-  border-bottom: 1px solid var(--border);
-  background: rgba(6,8,15,0.9); backdrop-filter: blur(16px);
-  flex-shrink: 0; z-index: 5; position: sticky; top: 0;
-  min-height: 54px;
-}
-.tb-brand { font-size: 1rem; font-weight: 700; }
-.tb-brand b { color: var(--accent-bright); }
-
-.tb-center { display: flex; align-items: center; gap: 8px; }
-.room-chip {
-  font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
-  color: var(--muted2); background: var(--surface);
-  border: 1px solid var(--border); border-radius: 20px;
-  padding: 4px 12px; cursor: pointer; transition: border-color 0.2s;
-  display: flex; align-items: center; gap: 6px;
-}
-.room-chip:hover { border-color: var(--accent); color: var(--accent-bright); }
-.dot-live { width: 6px; height: 6px; border-radius: 50%; background: var(--red); animation: pulse 1.5s infinite; }
-@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
-
-.tb-right { display: flex; align-items: center; gap: 10px; }
-.tb-time { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--muted); }
-.tb-count {
-  font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
-  color: var(--green); background: rgba(34,197,94,0.1);
-  border: 1px solid rgba(34,197,94,0.2); border-radius: 20px; padding: 3px 10px;
-}
-
-/* ─── Main Body ───────────────────────────────── */
-.meet-body { flex: 1; display: flex; overflow: hidden; }
-
-.video-area { flex: 1; position: relative; overflow: hidden; }
-
-.video-grid {
-  width: 100%; height: 100%;
-  display: grid; gap: 8px; padding: 8px;
-  align-items: center;
-}
-
-.tile {
-  position: relative; border-radius: var(--r); overflow: hidden;
-  background: var(--surface); border: 1px solid var(--border);
-  aspect-ratio: 16/9;
-  animation: tileIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
-}
-@keyframes tileIn { from { opacity:0; transform:scale(0.88); } to { opacity:1; transform:scale(1); } }
-
-.tile video { width:100%; height:100%; object-fit:cover; display:block; }
-
-.tile-label {
-  position: absolute; bottom: 8px; left: 10px;
-  font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #fff;
-  background: rgba(0,0,0,0.6); border-radius: 20px; padding: 2px 10px;
-  backdrop-filter: blur(8px);
-}
-.tile-muted-icon {
-  position: absolute; top: 8px; right: 8px;
-  background: var(--red); color: #fff; border-radius: 50%;
-  width: 24px; height: 24px; display: none;
-  align-items: center; justify-content: center; font-size: 11px;
-}
-.tile.muted .tile-muted-icon { display: flex; }
-
-.tile-avatar {
-  position: absolute; inset: 0;
-  display: none; flex-direction: column; align-items: center; justify-content: center;
-  background: var(--surface2); gap: 8px;
-}
-.tile.cam-off .tile-avatar { display: flex; }
-.tile.cam-off video { visibility: hidden; }
-
-.av-circle {
-  width: 60px; height: 60px; border-radius: 50%;
-  background: linear-gradient(135deg, #3b82f6, #6366f1);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.5rem; font-weight: 700; color: #fff;
-}
-.av-name { font-size: 0.8rem; color: var(--muted2); }
-
-/* Local tile outline */
-.tile[data-local="true"] { border-color: rgba(59,130,246,0.3); }
-
-/* ─── Sidebar ─────────────────────────────────── */
-.sidebar {
-  width: 240px; flex-shrink: 0;
-  background: var(--surface); border-left: 1px solid var(--border);
-  display: flex; flex-direction: column; overflow: hidden;
-  transition: width 0.3s, opacity 0.3s;
-}
-.sidebar.closed { width: 0; opacity: 0; pointer-events: none; }
-
-.sb-header {
-  padding: 1rem 1rem 0.6rem;
-  font-size: 0.75rem; font-weight: 600; color: var(--muted);
-  text-transform: uppercase; letter-spacing: 0.08em;
-  border-bottom: 1px solid var(--border); flex-shrink: 0;
-}
-.p-list { flex: 1; overflow-y: auto; padding: 0.4rem; }
-.p-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 0.55rem 0.8rem; border-radius: 8px;
-}
-.p-item:hover { background: var(--surface2); }
-.p-av {
-  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
-  background: linear-gradient(135deg, #3b82f6, #6366f1);
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 0.8rem; color: #fff;
-}
-.p-info { flex: 1; min-width: 0; }
-.p-name { font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.p-badge {
-  font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
-  color: var(--accent-bright); opacity: 0.7;
-}
-
-/* ─── Controls ─────────────────────────────────── */
-.controls {
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  padding: 1rem 1.5rem; border-top: 1px solid var(--border);
-  background: rgba(6,8,15,0.95); backdrop-filter: blur(16px);
-  flex-shrink: 0; flex-wrap: wrap;
-  position: sticky; bottom: 0;
-}
-.c-btn {
-  position: relative;
-  width: 50px; height: 50px; border-radius: 12px;
-  background: var(--surface2); color: var(--text);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.15rem; border: 1px solid var(--border);
-  transition: all 0.18s; flex-shrink: 0;
-}
-.c-btn:hover { background: var(--surface3); border-color: rgba(255,255,255,0.15); transform: translateY(-2px); }
-.c-btn.on { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
-.c-btn.off-state { background: var(--surface3); color: var(--muted); }
-.c-btn.danger { background: var(--red); border-color: var(--red); color: #fff; }
-.c-btn.danger:hover { background: #dc2626; }
-.c-tip {
-  position: absolute; bottom: -18px;
-  font-family: 'JetBrains Mono', monospace; font-size: 0.58rem;
-  color: var(--muted); white-space: nowrap; pointer-events: none;
-}
-
-.share-btn {
-  display: flex; align-items: center; gap: 6px;
-  padding: 0 1rem; height: 50px; border-radius: 12px;
-  background: var(--surface2); border: 1px solid var(--border);
-  font-size: 0.8rem; font-weight: 600; color: var(--muted2);
-  transition: all 0.18s; font-family: 'Space Grotesk', sans-serif;
-}
-.share-btn:hover { border-color: var(--accent); color: var(--accent-bright); transform: translateY(-2px); }
-.c-wrap { display: flex; flex-direction: column; align-items: center; padding-bottom: 20px; }
-
-/* ─── Waiting ─────────────────────────────────── */
-.waiting {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 1rem; background: rgba(6,8,15,0.85); backdrop-filter: blur(10px); z-index: 5;
-}
-.waiting.gone { display: none; }
-.ring {
-  width: 44px; height: 44px; border-radius: 50%;
-  border: 3px solid var(--surface3); border-top-color: var(--accent);
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.waiting-msg { font-size: 0.95rem; color: var(--muted); }
-.waiting-hint {
-  font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
-  color: var(--muted); background: var(--surface);
-  border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px;
-  cursor: pointer; max-width: 280px; text-align: center;
-  transition: border-color 0.2s; word-break: break-all;
-}
-.waiting-hint:hover { border-color: var(--accent); }
-
-/* ─── Toast ───────────────────────────────────── */
-.toast {
-  position: fixed; bottom: 100px; left: 50%;
-  transform: translateX(-50%) translateY(10px);
-  background: var(--surface3); border: 1px solid var(--border);
-  border-radius: 30px; padding: 0.55rem 1.2rem;
-  font-size: 0.82rem; color: var(--text);
-  opacity: 0; transition: all 0.25s; z-index: 999;
-  pointer-events: none; white-space: nowrap;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-/* ─── Status overlay ──────────────────────────── */
-.status-bar {
-  position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
-  background: rgba(6,8,15,0.8); border: 1px solid var(--border);
-  border-radius: 20px; padding: 4px 14px;
-  font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
-  color: var(--yellow); z-index: 6; pointer-events: none;
-  opacity: 0; transition: opacity 0.3s;
-}
-.status-bar.show { opacity: 1; }
-
-/* ─── Responsive ──────────────────────────────── */
-@media (max-width: 700px) {
-  .sidebar { display: none; }
-  .tb-time { display: none; }
-  .tb-brand { display: none; }
-  .share-btn span { display: none; }
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Online Meeting</title>
+  <link rel="stylesheet" href="index.css">
 </head>
 <body>
+  <div><a href="home.html">go back</a></div>
+<div class="card">
+  <h1>
+    <span><marquee direction="left">Nice</marquee></span>
+    <span style="font-weight: 300; color: #2b7cff;"><marquee direction="right">Choice</marquee></span>
+  </h1>
 
-<div class="bg">
-  <div class="bg-mesh"></div>
-  <div class="bg-grid"></div>
+  <div class="actions">
+    <button class="btn btn-primary" id="createBtn">✨ Create meeting</button>
+    <button class="btn btn-outline" id="joinBtn">🔗 Join meeting</button>
+  </div>
+
+  
+  <div class="link-area">
+    <input type="text" id="meetingLink" placeholder="Meeting link appears here" readonly>
+    <button class="btn" id="copyBtn">📋 Copy</button>
+  </div>
+
+  <div class="status-badge">
+    <i></i>real time meet
+  </div>
+
+  <div class="footnote">
+    <span>🔒 end‑to‑end encrypted</span>
+    <span>👥 multi‑participant</span>
+  </div>
 </div>
 
-<!-- LANDING -->
-<section id="landing">
-  <div class="brand">
-    <div class="brand-icon">
-      <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
-    </div>
-    <span class="brand-name">Video<b>Meet</b></span>
-  </div>
-
-  <h1 class="headline">Meet anyone,<br><span>instantly</span></h1>
-  <p class="subline">// No account. No downloads. Just share the link.</p>
-
-  <div class="card">
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="create">✦ New Room</button>
-      <button class="tab-btn" data-tab="join">⌥ Join Room</button>
-    </div>
-
-    <div id="tab-create" class="tab-panel active">
-      <div class="field">
-        <label>Your Name</label>
-        <div class="input-row">
-          <input id="create-name" type="text" placeholder="e.g. Alex" maxlength="24"/>
-        </div>
-      </div>
-      <button class="btn-main" id="btn-create">Create Room &amp; Join →</button>
-    </div>
-
-    <div id="tab-join" class="tab-panel">
-      <div class="field">
-        <label>Your Name</label>
-        <div class="input-row">
-          <input id="join-name" type="text" placeholder="e.g. Sam" maxlength="24"/>
-        </div>
-      </div>
-      <div class="field">
-        <label>Room ID</label>
-        <div class="input-row">
-          <input id="join-room" type="text" placeholder="Paste room ID…"/>
-          <button class="icon-btn" id="btn-paste" title="Paste">📋</button>
-        </div>
-      </div>
-      <button class="btn-main" id="btn-join">Join Meeting →</button>
-    </div>
-  </div>
-
-  <div class="features">
-    <div class="feature"><div class="feature-dot"></div>End-to-end P2P</div>
-    <div class="feature"><div class="feature-dot"></div>Up to 8 people</div>
-    <div class="feature"><div class="feature-dot"></div>No sign-up needed</div>
-  </div>
-</section>
-
-<!-- MEETING -->
-<section id="meeting">
-  <div class="topbar">
-    <span class="tb-brand">Video<b>Meet</b></span>
-    <div class="tb-center">
-      <div class="room-chip" id="room-chip" title="Click to copy invite link">
-        <span class="dot-live"></span>
-        <span id="room-chip-label">—</span>
-        📋
-      </div>
-    </div>
-    <div class="tb-right">
-      <span class="tb-count" id="tb-count">1 person</span>
-      <span class="tb-time" id="tb-time">00:00</span>
-    </div>
-  </div>
-
-  <div class="meet-body">
-    <div class="video-area">
-      <div class="status-bar" id="status-bar">Connecting…</div>
-      <div class="waiting" id="waiting">
-        <div class="ring"></div>
-        <p class="waiting-msg">Waiting for others to join…</p>
-        <div class="waiting-hint" id="waiting-copy">
-          Share this link to invite others:<br>
-          <span id="invite-url-display" style="color:var(--accent-bright)"></span>
-        </div>
-      </div>
-      <div class="video-grid" id="video-grid"></div>
-    </div>
-    <aside class="sidebar" id="sidebar">
-      <div class="sb-header">Participants (<span id="p-count">1</span>)</div>
-      <div class="p-list" id="p-list"></div>
-    </aside>
-  </div>
-
-  <div class="controls">
-    <div class="c-wrap">
-      <button class="c-btn on" id="btn-mute" title="Toggle mic (M)">🎤</button>
-      <span class="c-tip">Mic</span>
-    </div>
-    <div class="c-wrap">
-      <button class="c-btn on" id="btn-cam" title="Toggle camera (V)">📷</button>
-      <span class="c-tip">Camera</span>
-    </div>
-    <button class="share-btn" id="btn-share">
-      🔗 <span>Invite</span>
-    </button>
-    <div class="c-wrap">
-      <button class="c-btn" id="btn-sidebar" title="Participants">👥</button>
-      <span class="c-tip">People</span>
-    </div>
-    <div class="c-wrap">
-      <button class="c-btn danger" id="btn-leave" title="Leave">✕</button>
-      <span class="c-tip">Leave</span>
-    </div>
-  </div>
-</section>
-
-<div class="toast" id="toast"></div>
-
 <script>
-(() => {
-'use strict';
+  (function() {
+    
+    const meetingLinkInput = document.getElementById('meetingLink');
+    const createBtn = document.getElementById('createBtn');
+    const joinBtn = document.getElementById('joinBtn');
+    const copyBtn = document.getElementById('copyBtn');
 
-// ── Utilities ────────────────────────────────────────────────────
-const genId = () => {
-  const chars = 'abcdefghijkmnopqrstuvwxyz23456789';
-  return Array.from({length:10}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
-};
-const initial = name => (name || '?').charAt(0).toUpperCase();
-const $ = id => document.getElementById(id);
+  
+    let currentRoom = '';        
+    const JITSI_DOMAIN = 'meet.jit.si';
 
-// Toast
-const toastEl = $('toast');
-let toastT;
-const toast = (msg, ms=2800) => {
-  toastEl.textContent = msg;
-  toastEl.classList.add('show');
-  clearTimeout(toastT);
-  toastT = setTimeout(() => toastEl.classList.remove('show'), ms);
-};
-
-// Status bar
-const statusBar = $('status-bar');
-let statusT;
-const showStatus = (msg, ms=3000) => {
-  statusBar.textContent = msg;
-  statusBar.classList.add('show');
-  clearTimeout(statusT);
-  if (ms > 0) statusT = setTimeout(() => statusBar.classList.remove('show'), ms);
-};
-const hideStatus = () => { statusBar.classList.remove('show'); };
-
-// ── App State ─────────────────────────────────────────────────────
-const S = {
-  peer: null, stream: null, roomId: null, myName: 'You',
-  isMuted: false, isCamOff: false,
-  // connections: peerId → { conn, call }
-  connections: {},
-  // participants: peerId → { name }
-  participants: {},
-  clockInterval: null, startTime: null,
-};
-
-// ── Tabs ──────────────────────────────────────────────────────────
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    $(`tab-${btn.dataset.tab}`).classList.add('active');
-  });
-});
-
-// ── URL hash handling ─────────────────────────────────────────────
-const getRoomFromHash = () => {
-  const m = location.hash.replace('#','').match(/^r\/([a-z0-9]{6,20})$/i);
-  return m ? m[1] : null;
-};
-const getInviteURL = () => `${location.origin}${location.pathname}#r/${S.roomId}`;
-
-const prefillFromHash = () => {
-  const room = getRoomFromHash();
-  if (room) {
-    $('join-room').value = room;
-    document.querySelectorAll('.tab-btn')[1].click();
-    toast(`Room ID loaded — enter your name and join!`, 4000);
-  }
-};
-prefillFromHash();
-window.addEventListener('hashchange', prefillFromHash);
-
-// Paste button
-$('btn-paste').addEventListener('click', async () => {
-  try {
-    $('join-room').value = (await navigator.clipboard.readText()).trim();
-    toast('Pasted ✓');
-  } catch { toast('Paste manually — clipboard access blocked'); }
-});
-
-// ── Media ─────────────────────────────────────────────────────────
-const getMedia = async () => {
-  const constraints = [
-    { video: true, audio: true },
-    { video: { facingMode: 'user' }, audio: true },
-    { video: false, audio: true },
-  ];
-  for (const c of constraints) {
-    try { return await navigator.mediaDevices.getUserMedia(c); } catch {}
-  }
-  toast('⚠ Could not access camera/mic. Continuing without.', 5000);
-  return null;
-};
-
-// ── Video tiles ───────────────────────────────────────────────────
-const grid = $('video-grid');
-const waiting = $('waiting');
-
-const updateGridLayout = () => {
-  const n = grid.querySelectorAll('.tile').length;
-  if (n === 0) return;
-  if (n === 1)      grid.style.gridTemplateColumns = 'minmax(0, 700px)';
-  else if (n === 2) grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
-  else if (n <= 4)  grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
-  else if (n <= 6)  grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
-  else              grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
-  grid.style.gridAutoRows = '';
-  // Check if waiting overlay should hide
-  waiting.classList.toggle('gone', n >= 2);
-};
-
-const makeTile = (peerId, name, stream, isLocal) => {
-  const tile = document.createElement('div');
-  tile.classList.add('tile');
-  tile.dataset.peerId = peerId;
-  if (isLocal) tile.dataset.local = 'true';
-
-  const video = document.createElement('video');
-  video.autoplay = true; video.playsInline = true;
-  if (isLocal) video.muted = true;
-  if (stream) video.srcObject = stream;
-
-  const label = document.createElement('div');
-  label.classList.add('tile-label');
-  label.textContent = isLocal ? `${name} (You)` : name;
-
-  const mutedIcon = document.createElement('div');
-  mutedIcon.classList.add('tile-muted-icon');
-  mutedIcon.textContent = '🔇';
-
-  const av = document.createElement('div');
-  av.classList.add('tile-avatar');
-  const avc = document.createElement('div');
-  avc.classList.add('av-circle');
-  avc.textContent = initial(name);
-  const avn = document.createElement('div');
-  avn.classList.add('av-name');
-  avn.textContent = name;
-  av.append(avc, avn);
-
-  tile.append(video, label, mutedIcon, av);
-  return tile;
-};
-
-const addTile = (peerId, name, stream, isLocal=false) => {
-  if (grid.querySelector(`.tile[data-peer-id="${peerId}"]`)) return;
-  const t = makeTile(peerId, name, stream, isLocal);
-  grid.appendChild(t);
-  updateGridLayout();
-};
-
-const removeTile = (peerId) => {
-  grid.querySelector(`.tile[data-peer-id="${peerId}"]`)?.remove();
-  updateGridLayout();
-};
-
-const getTileVideo = (peerId) => grid.querySelector(`.tile[data-peer-id="${peerId}"] video`);
-
-// ── Participants Panel ─────────────────────────────────────────────
-const renderParticipants = () => {
-  const pList = $('p-list');
-  const pCount = $('p-count');
-  const tbCount = $('tb-count');
-
-  pList.innerHTML = '';
-  const all = [
-    { name: S.myName, isYou: true },
-    ...Object.values(S.participants).map(p => ({ name: p.name }))
-  ];
-  pCount.textContent = all.length;
-  tbCount.textContent = `${all.length} ${all.length === 1 ? 'person' : 'people'}`;
-
-  all.forEach(({ name, isYou }) => {
-    const item = document.createElement('div');
-    item.classList.add('p-item');
-    item.innerHTML = `
-      <div class="p-av">${initial(name)}</div>
-      <div class="p-info">
-        <div class="p-name">${name}</div>
-        ${isYou ? '<div class="p-badge">you</div>' : ''}
-      </div>`;
-    pList.appendChild(item);
-  });
-};
-
-// ── PeerJS ────────────────────────────────────────────────────────
-/*
-  Architecture:
-  - Room creator registers as peer with ID = roomId
-  - Joiners get random IDs, then connect to roomId peer
-  - On data connection open: send NAME message
-  - On receiving NAME: call that peer with our stream
-  - All peers maintain mesh: when a new peer joins, host tells everyone
-    about the newcomer via PEER_LIST so they can also call each other
-*/
-
-const PEER_CFG = {
-  host: '0.peerjs.com', port: 443, path: '/', secure: true,
-  config: { iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-  ]},
-  debug: 0,
-};
-
-const initPeer = (desiredId) => new Promise((resolve, reject) => {
-  let peer;
-  const setup = (id) => {
-    peer = new Peer(id, PEER_CFG);
-    peer.on('open', () => { S.peer = peer; resolve(); });
-    peer.on('error', (err) => {
-      console.error('PeerJS error:', err.type, err.message || err);
-      if (err.type === 'unavailable-id') {
-        // Try random ID
-        peer.destroy();
-        setup(undefined);
-      } else if (err.type === 'peer-unavailable') {
-        showStatus('⚠ Could not reach that peer', 4000);
-      } else {
-        reject(err);
-      }
-    });
-    peer.on('disconnected', () => {
-      showStatus('⚡ Reconnecting…', 0);
-      peer.reconnect();
-    });
-    peer.on('close', () => showStatus('Connection closed', 0));
-
-    // Incoming data connections
-    peer.on('connection', (conn) => {
-      const pid = conn.peer;
-      setupDataConn(pid, conn);
-    });
-
-    // Incoming calls
-    peer.on('call', (call) => {
-      call.answer(S.stream);
-      const pid = call.peer;
-      if (!S.connections[pid]) S.connections[pid] = {};
-      S.connections[pid].call = call;
-      call.on('stream', (remote) => {
-        const name = S.participants[pid]?.name || pid.slice(0,8);
-        const vid = getTileVideo(pid);
-        if (vid) vid.srcObject = remote;
-        else addTile(pid, name, remote);
-        renderParticipants();
-      });
-      call.on('close', () => handleDisconnect(pid));
-      call.on('error', () => handleDisconnect(pid));
-    });
-  };
-  setup(desiredId);
-});
-
-const setupDataConn = (pid, conn) => {
-  if (!S.connections[pid]) S.connections[pid] = {};
-  S.connections[pid].conn = conn;
-
-  conn.on('open', () => {
-    // Send our name immediately
-    conn.send({ type: 'NAME', name: S.myName, peerId: S.peer.id });
-    // If we are the host, send the current peer list to the newcomer
-    // so they can call everyone else in the room
-    if (S.roomId === S.peer.id) {
-      const others = Object.keys(S.participants).filter(id => id !== pid);
-      if (others.length > 0) {
-        conn.send({ type: 'PEER_LIST', peers: others.map(id => ({ id, name: S.participants[id].name })) });
-      }
+   
+    function generateRoomId() {
+      const adjectives = ['sunny', 'coral', 'mellow', 'frost', 'ember', 'azure', 'breeze', 'cabin', 'dune', 'elm', 'fjord', 'grove', 'haze', 'ivy', 'jade', 'kite', 'luna', 'maple', 'nova', 'oasis', 'pixel', 'quill', 'ridge', 'sable', 'tide', 'umbra', 'vivid', 'wisp', 'yarn', 'zest'];
+      const nouns = ['wave', 'peak', 'field', 'bridge', 'cloud', 'drift', 'echo', 'flame', 'glen', 'harbor', 'island', 'knoll', 'lodge', 'meadow', 'nook', 'orbit', 'palm', 'reef', 'spire', 'stone', 'tower', 'vista', 'wilder', 'cove', 'delta', 'brook', 'ridge', 'shade', 'vale', 'wood'];
+      const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+      const noun = nouns[Math.floor(Math.random() * nouns.length)];
+      const num = Math.floor(Math.random() * 999) + 10;
+      return `${adj}-${noun}-${num}`;
     }
-  });
 
-  conn.on('data', (data) => handleData(pid, data));
-  conn.on('close', () => handleDisconnect(pid));
-  conn.on('error', () => handleDisconnect(pid));
-};
+   
+    function updateLinkDisplay(roomName) {
+      if (!roomName) {
+        meetingLinkInput.value = '';
+        return;
+      }
+      const fullUrl = `https://${JITSI_DOMAIN}/${roomName}`;
+      meetingLinkInput.value = fullUrl;
+    }
 
-const callPeer = (pid, name) => {
-  if (!S.stream) return;
-  // Only call if we haven't already
-  if (S.connections[pid]?.call) return;
-  const call = S.peer.call(pid, S.stream);
-  if (!S.connections[pid]) S.connections[pid] = {};
-  S.connections[pid].call = call;
-  call.on('stream', (remote) => {
-    const vid = getTileVideo(pid);
-    if (vid) vid.srcObject = remote;
-    else addTile(pid, name || S.participants[pid]?.name || pid.slice(0,8), remote);
-    renderParticipants();
-  });
-  call.on('close', () => handleDisconnect(pid));
-  call.on('error', () => handleDisconnect(pid));
-};
+    
+    function openJitsiMeeting(roomName) {
+      if (!roomName) return;
+      
+      const url = `https://${JITSI_DOMAIN}/${roomName}#config.startWithVideoMuted=false&config.startWithAudioMuted=false`;
+    
+      window.open(url, '_blank');
+    }
 
-const handleData = (pid, data) => {
-  if (data.type === 'NAME') {
-    S.participants[pid] = { name: data.name };
-    // Update label if tile already exists
-    const lbl = grid.querySelector(`.tile[data-peer-id="${pid}"] .tile-label`);
-    if (lbl) lbl.textContent = data.name;
-    const avc = grid.querySelector(`.tile[data-peer-id="${pid}"] .av-circle`);
-    if (avc) avc.textContent = initial(data.name);
-    const avn = grid.querySelector(`.tile[data-peer-id="${pid}"] .av-name`);
-    if (avn) avn.textContent = data.name;
-    renderParticipants();
-    // Call them with our media
-    callPeer(pid, data.name);
-    toast(`${data.name} joined the room`);
-    hideStatus();
-  }
+   
+    function createMeeting() {
+      const room = generateRoomId();
+      currentRoom = room;
+      updateLinkDisplay(room);
+     
+      openJitsiMeeting(room);
+    }
 
-  if (data.type === 'PEER_LIST') {
-    // We received a list of existing peers from the host — connect to each
-    (data.peers || []).forEach(({ id, name }) => {
-      if (id === S.peer.id) return;
-      if (S.connections[id]) return; // already connected
-      S.participants[id] = { name };
-      const conn = S.peer.connect(id, { reliable: true });
-      setupDataConn(id, conn);
-      renderParticipants();
+    
+    function joinMeeting() {
+      let rawLink = meetingLinkInput.value.trim();
+      if (!rawLink) {
+        
+        createMeeting();
+        return;
+      }
+
+     
+      let roomName = '';
+      try {
+        if (rawLink.startsWith('http://') || rawLink.startsWith('https://')) {
+          const urlObj = new URL(rawLink);
+          
+          if (urlObj.hostname === JITSI_DOMAIN || urlObj.hostname.endsWith('.' + JITSI_DOMAIN)) {
+            roomName = urlObj.pathname.replace(/^\/+/, '').replace(/\/+$/, '');
+          } else {
+           
+            roomName = rawLink.split('/').pop().split('#')[0].split('?')[0];
+          }
+        } else {
+          
+          roomName = rawLink.split('/').pop().split('#')[0].split('?')[0];
+        }
+      } catch (_) {
+        
+        roomName = rawLink.replace(/[^a-zA-Z0-9\-_]/g, '-');
+      }
+
+     
+      if (!roomName) {
+        
+        roomName = generateRoomId();
+      }
+     
+      roomName = roomName.replace(/[^a-zA-Z0-9\-_]/g, '-').substring(0, 60);
+
+      currentRoom = roomName;
+      
+      updateLinkDisplay(roomName);
+      
+      openJitsiMeeting(roomName);
+    }
+
+   
+    function copyLink() {
+      const link = meetingLinkInput.value.trim();
+      if (!link) {
+        
+        createMeeting();
+        
+        setTimeout(() => {
+          if (meetingLinkInput.value) {
+            meetingLinkInput.select();
+            navigator.clipboard.writeText(meetingLinkInput.value).catch(() => {});
+          }
+        }, 50);
+        return;
+      }
+      meetingLinkInput.select();
+      navigator.clipboard.writeText(link).catch(() => {
+        
+        document.execCommand('copy');
+      });
+      const original = copyBtn.textContent;
+      copyBtn.textContent = '✅ Copied';
+      setTimeout(() => { copyBtn.textContent = original; }, 1200);
+    }
+
+   
+    createBtn.addEventListener('click', createMeeting);
+
+    joinBtn.addEventListener('click', joinMeeting);
+
+    copyBtn.addEventListener('click', copyLink);
+
+   
+    meetingLinkInput.addEventListener('focus', function() {
+      this.select();
     });
-  }
 
-  if (data.type === 'MUTED') {
-    grid.querySelector(`.tile[data-peer-id="${pid}"]`)?.classList.toggle('muted', data.value);
-  }
-  if (data.type === 'CAM_OFF') {
-    grid.querySelector(`.tile[data-peer-id="${pid}"]`)?.classList.toggle('cam-off', data.value);
-  }
-};
+   
+    meetingLinkInput.placeholder = 'your meeting link appears here';
 
-const handleDisconnect = (pid) => {
-  const name = S.participants[pid]?.name || pid.slice(0,8);
-  removeTile(pid);
-  delete S.participants[pid];
-  try { S.connections[pid]?.call?.close(); S.connections[pid]?.conn?.close(); } catch {}
-  delete S.connections[pid];
-  renderParticipants();
-  toast(`${name} left the call`);
-};
-
-const broadcast = (msg) => {
-  Object.values(S.connections).forEach(({ conn }) => {
-    try { if (conn?.open) conn.send(msg); } catch {}
-  });
-};
-
-// ── Clock ─────────────────────────────────────────────────────────
-const startClock = () => {
-  S.startTime = Date.now();
-  S.clockInterval = setInterval(() => {
-    const s = Math.floor((Date.now() - S.startTime) / 1000);
-    $('tb-time').textContent =
-      `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-  }, 1000);
-};
-
-// ── Landing → Meeting ─────────────────────────────────────────────
-const landingEl = $('landing');
-const meetingEl = $('meeting');
-
-const showMeeting = () => {
-  landingEl.classList.add('hiding');
-  setTimeout(() => {
-    landingEl.style.display = 'none';
-    meetingEl.classList.add('visible');
-    startClock();
-  }, 320);
-  history.replaceState(null, '', `#r/${S.roomId}`);
-  $('room-chip-label').textContent = S.roomId;
-  // Update invite link
-  const url = getInviteURL();
-  $('invite-url-display').textContent = url;
-  $('waiting-copy').onclick = () => copyInvite();
-};
-
-const leaveMeeting = () => {
-  // Stop all tracks
-  S.stream?.getTracks().forEach(t => t.stop());
-  // Close all connections
-  Object.values(S.connections).forEach(({ conn, call }) => {
-    try { conn?.close(); call?.close(); } catch {}
-  });
-  S.peer?.destroy();
-
-  // Reset state
-  Object.assign(S, { peer:null, stream:null, connections:{}, participants:{}, roomId:null, isMuted:false, isCamOff:false });
-  clearInterval(S.clockInterval);
-
-  // Reset UI
-  grid.innerHTML = '';
-  $('p-list').innerHTML = '';
-  waiting.classList.remove('gone');
-  $('tb-time').textContent = '00:00';
-  const mb = $('btn-mute'); mb.textContent = '🎤'; mb.classList.add('on'); mb.classList.remove('off-state');
-  const cb = $('btn-cam');  cb.textContent = '📷'; cb.classList.add('on'); cb.classList.remove('off-state');
-
-  meetingEl.classList.remove('visible');
-  setTimeout(() => { landingEl.style.display=''; landingEl.classList.remove('hiding'); }, 320);
-  history.replaceState(null, '', location.pathname);
-  toast('You left the meeting');
-};
-
-// ── Create Room ───────────────────────────────────────────────────
-$('btn-create').addEventListener('click', async () => {
-  const name = $('create-name').value.trim() || 'Host';
-  S.myName = name;
-  S.roomId = genId();
-
-  const btn = $('btn-create');
-  btn.textContent = 'Starting…'; btn.disabled = true;
-  showStatus('Getting media…', 0);
-
-  try {
-    S.stream = await getMedia();
-    showStatus('Creating room…', 0);
-    await initPeer(S.roomId);
-    addTile('local', name, S.stream, true);
-    renderParticipants();
-    showMeeting();
-    toast(`Room ready! Share the link to invite others.`, 5000);
-    hideStatus();
-  } catch (err) {
-    console.error(err);
-    toast('Failed to create room. Please check permissions.', 5000);
-    showStatus('');
-  } finally {
-    btn.textContent = 'Create Room & Join →';
-    btn.disabled = false;
-  }
-});
-
-// ── Join Room ─────────────────────────────────────────────────────
-$('btn-join').addEventListener('click', async () => {
-  const name = $('join-name').value.trim() || 'Guest';
-  let roomId = $('join-room').value.trim();
-
-  // Allow pasting full URL
-  const urlMatch = roomId.match(/[#/]r\/([a-z0-9]{6,20})/i);
-  if (urlMatch) roomId = urlMatch[1];
-
-  if (!roomId) { toast('Enter a Room ID or paste the invite link'); return; }
-
-  S.myName = name; S.roomId = roomId;
-
-  const btn = $('btn-join');
-  btn.textContent = 'Joining…'; btn.disabled = true;
-  showStatus('Getting media…', 0);
-
-  try {
-    S.stream = await getMedia();
-    showStatus('Connecting to room…', 0);
-    await initPeer(undefined); // random ID for joiner
-    addTile('local', name, S.stream, true);
-    renderParticipants();
-    showMeeting();
-
-    // Connect to the host (room creator)
-    showStatus('Finding host…', 0);
-    const hostConn = S.peer.connect(roomId, { reliable: true });
-    setupDataConn(roomId, hostConn);
-    toast(`Connecting to room: ${roomId}`, 3000);
-  } catch (err) {
-    console.error(err);
-    toast('Failed to join. Check Room ID and permissions.', 5000);
-    showStatus('');
-  } finally {
-    btn.textContent = 'Join Meeting →';
-    btn.disabled = false;
-  }
-});
-
-// ── Controls ──────────────────────────────────────────────────────
-$('btn-mute').addEventListener('click', () => {
-  S.isMuted = !S.isMuted;
-  S.stream?.getAudioTracks().forEach(t => t.enabled = !S.isMuted);
-  const btn = $('btn-mute');
-  btn.textContent = S.isMuted ? '🔇' : '🎤';
-  btn.classList.toggle('on', !S.isMuted);
-  btn.classList.toggle('off-state', S.isMuted);
-  grid.querySelector('.tile[data-local="true"]')?.classList.toggle('muted', S.isMuted);
-  broadcast({ type: 'MUTED', value: S.isMuted });
-  toast(S.isMuted ? 'Muted' : 'Unmuted');
-});
-
-$('btn-cam').addEventListener('click', () => {
-  S.isCamOff = !S.isCamOff;
-  S.stream?.getVideoTracks().forEach(t => t.enabled = !S.isCamOff);
-  const btn = $('btn-cam');
-  btn.textContent = S.isCamOff ? '🚫' : '📷';
-  btn.classList.toggle('on', !S.isCamOff);
-  btn.classList.toggle('off-state', S.isCamOff);
-  grid.querySelector('.tile[data-local="true"]')?.classList.toggle('cam-off', S.isCamOff);
-  broadcast({ type: 'CAM_OFF', value: S.isCamOff });
-  toast(S.isCamOff ? 'Camera off' : 'Camera on');
-});
-
-$('btn-leave').addEventListener('click', leaveMeeting);
-
-$('btn-sidebar').addEventListener('click', () => {
-  $('sidebar').classList.toggle('closed');
-});
-
-const copyInvite = async () => {
-  if (!S.roomId) return;
-  const url = getInviteURL();
-  try {
-    await navigator.clipboard.writeText(url);
-    toast('Invite link copied! ✓');
-  } catch {
-    toast(`Link: ${url}`, 6000);
-  }
-};
-
-$('btn-share').addEventListener('click', copyInvite);
-$('room-chip').addEventListener('click', copyInvite);
-
-// Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-  if (!meetingEl.classList.contains('visible')) return;
-  if (e.target.tagName === 'INPUT') return;
-  if (e.key === 'm' || e.key === 'M') $('btn-mute').click();
-  if (e.key === 'v' || e.key === 'V') $('btn-cam').click();
-});
-
-})();
+    
+    meetingLinkInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        joinMeeting();
+      }
+    });
+    console.log('✅ Jitsi meeting app ready · no backend');
+  })();
 </script>
 </body>
 </html>

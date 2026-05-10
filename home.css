@@ -1,41 +1,3 @@
- body{
-    overflow: hidden;
-    padding: 0;
- }
- .main2{
-      background-color: white;
-      display: flex;
-      gap: 10px;
-      height: 80vh;
-      padding: 20px;
-      
-      overflow: hidden;
-      border: 2px solid rgb(173, 255, 47,0.3);
-      
-    }
-   
-    .left{
-      height: 700px;
-      width: 10%;
-      border-right: 4px solid rgb(12, 12, 12,0.3);
-      overflow: hidden;
-      padding: 5px;
-    }
-    .left::-webkit-scrollbar {
-    display: none;
-}
-    .right{
-      height: 100%;
-      width: 80%;
-       padding: 5px;
-    }
-    .all{
-        display: flex;
-        flex-direction: column;
-        background-color: none;
-        gap: none;
-    }
-    
 
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;800&family=DM+Sans:wght@300;400;500&display=swap');
 
@@ -45,7 +7,7 @@
   --surface:    #17171a;
   --surface-2:  #1f1f24;
   --border:     #2a2a30;
-  --accent:     #f5a623;      /* warm amber */
+  --accent:     #f5a623;      
   --accent-dim: #b87310;
   --accent-glow:rgba(245,166,35,0.18);
   --text:       #e8e8ec;
@@ -64,22 +26,33 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
-  height: 100%;
+  display: flex;
+overflow-y: auto;
   font-family: 'DM Sans', sans-serif;
   background: var(--bg);
   color: var(--text);
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5PX;
 }
 
-
+.chat-header{
+  border-radius: 20px;
+}
 .screen {
   display: none;
-  height: 100dvh;
-  width: 100%;
+  height: 40Vh;
+  width: 700PX;
+  overflow-y: auto;
+  padding: 2px;
 }
-.screen.active { display: flex; }
+.screen.active { display: flex;
+ height: 600px;
+}
 
 
 #join-screen {
@@ -108,7 +81,7 @@ html, body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Brand */
+
 .brand {
   display: flex;
   align-items: center;
@@ -132,7 +105,7 @@ html, body {
   font-weight: 300;
 }
 
-/* Fields */
+
 .field {
   margin-bottom: 20px;
 }
@@ -169,7 +142,7 @@ html, body {
   margin-top: 5px;
 }
 
-/* Primary button */
+
 .btn-primary {
   width: 100%;
   margin-top: 8px;
@@ -192,7 +165,7 @@ html, body {
 }
 .btn-primary:active { transform: translateY(0); }
 
-/* Error */
+
 .error-msg {
   margin-top: 12px;
   font-size: 13px;
@@ -202,25 +175,16 @@ html, body {
 .hidden { display: none !important; }
 
 
-/* ===================================================================
-   CHAT SCREEN
-   =================================================================== */
+
 #chat-screen {
   flex-direction: column;
   height: 100dvh;
   overflow: hidden;
-  background:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 39px,
-      var(--surface-2) 39px,
-      var(--surface-2) 40px
-    ),
-    var(--bg);
+  background-color: rgb(255, 255, 255,0.02);
+  border-radius: 20px;
 }
 
-/* Header */
+
 .chat-header {
   display: flex;
   align-items: center;
@@ -277,7 +241,7 @@ html, body {
 }
 #leave-btn:hover { color: var(--text); background: var(--surface-2); }
 
-/* Messages container */
+
 .messages-container {
   flex: 1;
   overflow-y: auto;
@@ -291,14 +255,15 @@ html, body {
 .messages-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
 .messages-list {
-  display: flex;
-  flex-direction: column;
+ 
   gap: 4px;
   min-height: 100%;
   justify-content: flex-end;
+  overflow-y: scroll;
+  scrollbar-width: none;
 }
 
-/* Individual message bubble */
+
 .message {
   display: flex;
   flex-direction: column;
@@ -323,7 +288,7 @@ html, body {
   position: relative;
 }
 
-/* My bubbles */
+
 .message.me .bubble {
   background: var(--bubble-me);
   color: #0e0e0f;
@@ -331,7 +296,7 @@ html, body {
   font-weight: 400;
 }
 
-/* Their bubbles */
+
 .message.them .bubble {
   background: var(--bubble-them);
   color: var(--text);
@@ -339,7 +304,7 @@ html, body {
   border-bottom-left-radius: 4px;
 }
 
-/* System messages (join/leave) */
+
 .message.system .bubble {
   background: transparent;
   color: var(--text-muted);
@@ -350,25 +315,26 @@ html, body {
   border-radius: 20px;
 }
 
-/* Sender name + timestamp */
+
 .msg-meta {
   font-size: 11px;
   color: var(--text-muted);
   margin: 3px 4px 8px;
 }
 
-/* Consecutive message grouping — hide meta for closely-spaced messages */
+
 .message + .message.me .msg-meta,
 .message + .message.them .msg-meta {
   margin-top: 3px;
 }
 
-/* Footer / input bar */
+
 .chat-footer {
-  padding: 12px 16px 14px;
+  padding: 12px 0px 14px;
   background: var(--surface);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
+  border-radius: 20px;
 }
 .input-row {
   display: flex;
@@ -427,9 +393,7 @@ html, body {
   margin-top: 5px;
 }
 
-/* ===================================================================
-   TOAST
-   =================================================================== */
+
 .toast {
   position: fixed;
   bottom: 24px;
@@ -453,9 +417,7 @@ html, body {
   transform: translateX(-50%) translateY(0);
 }
 
-/* ===================================================================
-   RESPONSIVE
-   =================================================================== */
+
 @media (max-width: 480px) {
   .join-card { padding: 30px 22px; }
   .message { max-width: 88%; }

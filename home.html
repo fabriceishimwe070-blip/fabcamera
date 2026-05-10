@@ -1,30 +1,309 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home page</title>
-    <link rel="stylesheet" href="home.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>MediAssist Pro </title>
+  <link rel="stylesheet" href="home2.css">
 </head>
 <body>
-    <div class="all">
-    <div><marquee behavior="" direction=""><h2>hi fabrice ishimwe</h2></marquee></div>
-<div class="main2">
+  <a href="login.html" style="color: white; font-weight: 900;"><u>Log out</u></a>
+  <div class="all">
+<div class="app-container">
+  <div class="home">
+   <div class="one"><div><a href="index.html"><u>Talk live</u></a></div><div><a href="chat.html"><u>Chat-DR</u></a></div><div></div><div><button onclick="come()"><u>categories</u></button></div><div class="settings"><button><u>Settings</u></button></div></div> 
 
-<div class="left">
-    <div>
-        <div><a href="chat.html">Chat</a></div>
-        
+   <div class="profile"><div>name</div><div>icon</div></div>
+
+  </div>
+
+  <div class="how">
+  <div class="hero">
+    <div ><h1>🏥 MediAssist Pro</h1></div>
+    <div class="badge">🔒 Secure • AI-Powered Assistance • Trusted Clinicians</div>
+  </div>
+    
+  <div class="dashboard">
+    
+    <div class="symptom-card">
+      <h2>🩺 Describe your symptoms</h2>
+      <div class="input-group">
+        <input type="text" id="symptomInput" placeholder="e.g., severe headache, fever, stomach pain, sneezing, chest tightness ..." autocomplete="off">
+        <button id="checkBtn">🔍 Check Disease</button>
+      </div>
+      <div id="resultContainer" class="result-box">
+        <div style="color:#5e6f8d; text-align:center; padding:1rem;">✨ Enter your symptoms above ✨<br>Our intelligent system will analyze and give advice + medicine</div>
+      </div>
+      <div class="admin-note">
+        <p><strong>📋 Medical Knowledge Base (Doctors/Org can update)</strong></p>
+        <button id="openSymptomAdminBtn" style="margin-top:8px; background:#f4b942; border:none; padding:6px 16px; border-radius:40px; font-weight:bold; cursor:pointer;">🛠️ Doctor Panel: Add/Edit Symptom Rules</button>
+      </div>
     </div>
 
-    <div></div>
-    <div></div>
+   </div>
+
+<div class="second">
+    <div class="divisions-panel" id="panel">
+      <div class="divisions-header">📂 MEDICAL DIVISIONS</div>
+      <div class="divisions-list" id="divisionsListContainer">
+        
+      </div>
+      <div style="padding: 0 1rem 1rem 1rem; font-size:0.7rem; color:#6c7e97; text-align:center;">Click any division to see experts & details</div>
+    </div>
+  </div>
 </div>
 
 
-<div class="right"></div>
 
+<div id="divisionPopup" class="popup-overlay">
+  <div class="popup-card">
+    <div class="popup-header">
+      <span id="popupTitle">Division Name</span>
+      <button id="closePopupBtn">&times;</button>
+    </div>
+    <div class="popup-body" id="popupBody">
+      <p>Loading division details...</p>
+    </div>
+  </div>
+</div>
+
+
+<div id="adminPopup" class="popup-overlay">
+  <div class="popup-card" style="max-width: 550px;">
+    <div class="popup-header" style="background:#b45f1b;">
+      <span>🏥 Medical Knowledge Admin</span>
+      <button id="closeAdminPopupBtn">&times;</button>
+    </div>
+    <div class="popup-body">
+     <br>
+      <div style="margin: 1rem 0;">
+        <label>Up date the disease</label>
+        <input type="text" id="newSymKey" placeholder="e.g., runny nose, itchy eyes" style="width:100%; padding:8px; margin:6px 0; border-radius:12px; border:1px solid #ccc;">
+        <label>Disease name:</label>
+        <input type="text" id="newDisease" placeholder="e.g., Allergic Rhinitis" style="width:100%; padding:8px; margin:6px 0; border-radius:12px;">
+        <label>Medical Advice:</label>
+        <textarea id="newAdvice" rows="2" placeholder="Avoid allergens, use antihistamines..." style="width:100%; border-radius:12px; padding:8px;"></textarea>
+        <label>Suggested Medicine:</label>
+        <input type="text" id="newMedicine" placeholder="e.g., Loratadine 10mg" style="width:100%; padding:8px; margin:6px 0; border-radius:12px;">
+        <button id="addSymptomRuleBtn" style="background:#2b7a62; color:white; border:none; padding:10px; border-radius:40px; width:100%; font-weight:bold; margin-top:8px;">➕ Add / Update Rule</button>
+        <p style="font-size:0.7rem; margin-top:10px;">* Existing similar symptoms will be updated. System will prioritize most specific matches.</p>
+      </div>
+      <hr>
+      <p><strong>📋 Current disease coverage:</strong> (predefined + custom)</p>
+      <div id="ruleListPreview" style="max-height:150px; overflow-y:auto; background:#f5f7fb; border-radius:12px; padding:8px; font-size:0.75rem;"></div>
+    </div>
+  </div>
 </div>
 </div>
+</div>
+</div>
+<script>
+ 
+  let symptomDB = [
+    { keywords: ["headache", "throbbing head", "migraine"], disease: "Tension Headache / Migraine", advice: "Rest in a dark quiet room, stay hydrated, avoid screens.", medicine: "Ibuprofen 400mg or Paracetamol 500mg as needed." },
+    { keywords: ["fever", "high temperature", "chills", "body ache"], disease: "Viral Fever / Flu", advice: "Take rest, increase fluid intake, monitor temperature.", medicine: "Paracetamol 500mg every 6 hours, ORS solution." },
+    { keywords: ["stomach pain", "abdominal pain", "cramps", "bloating"], disease: "Gastric / Indigestion", advice: "Avoid spicy food, eat small meals, use heating pad.", medicine: "Antacid (Calcium carbonate), or Dicyclomine for cramps." },
+    { keywords: ["cough", "dry cough", "wet cough", "sore throat"], disease: "Acute Bronchitis / Common Cold", advice: "Gargle with warm salt water, honey with warm tea.", medicine: "Dextromethorphan (for dry cough) or Guaifenesin (chest congestion)." },
+    { keywords: ["sneezing", "runny nose", "itchy nose", "allergy", "watery eyes"], disease: "Seasonal Allergies", advice: "Avoid pollen exposure, use air purifier.", medicine: "Cetirizine 10mg or Loratadine 10mg daily." },
+    { keywords: ["chest tightness", "shortness of breath", "wheezing"], disease: "Possible Asthma / Respiratory distress", advice: "Seek medical attention if severe; sit upright, use prescribed inhaler.", medicine: "Salbutamol inhaler (emergency relief), consult pulmonologist." },
+    { keywords: ["fatigue", "weakness", "low energy", "tired"], disease: "General Weakness / Anemia risk", advice: "Balanced diet with iron-rich foods, proper sleep.", medicine: "Multivitamins + Iron supplement (if diagnosed)." },
+    { keywords: ["nausea", "vomiting", "upset stomach"], disease: "Gastroenteritis", advice: "Small sips of water, BRAT diet (banana, rice, applesauce, toast).", medicine: "Ondansetron (prescription), ORS, probiotics." }
+  ];
+
+  
+  function updateRulesPreview() {
+    const previewDiv = document.getElementById('ruleListPreview');
+    if (!previewDiv) return;
+    previewDiv.innerHTML = symptomDB.map((rule, idx) => `<div><strong>🔹 ${rule.disease}</strong> — keywords: ${rule.keywords.join(', ')}</div>`).join('');
+  }
+
+  
+  function matchSymptoms(userInput) {
+    if (!userInput.trim()) return null;
+    const lowerInput = userInput.toLowerCase();
+  
+    let bestMatch = null;
+    let maxScore = 0;
+    for (let rule of symptomDB) {
+      let score = 0;
+      for (let kw of rule.keywords) {
+        if (lowerInput.includes(kw)) {
+          score += kw.length; 
+        }
+      }
+      if (score > maxScore && score > 0) {
+        maxScore = score;
+        bestMatch = rule;
+      }
+    }
+   
+    if (!bestMatch && userInput.length > 3) {
+      return { disease: "Undetermined Syndrome", advice: "Please consult a physician for proper diagnosis. Do not rely solely on automated checker.", medicine: "No OTC recommendation – schedule teleconsultation." };
+    }
+    return bestMatch;
+  }
+
+  
+  function displayResult(userInput) {
+    const container = document.getElementById('resultContainer');
+    if (!userInput.trim()) {
+      container.innerHTML = `<div style="color:#5e6f8d; text-align:center; padding:1rem;">⚠️ Please enter your symptoms (e.g., fever, cough, headache) to get analysis.</div>`;
+      return;
+    }
+    const match = matchSymptoms(userInput);
+    if (match) {
+      container.innerHTML = `
+        <div class="disease-name">🩺 Predicted Condition: ${match.disease}</div>
+        <div class="advice"><strong>💡 Medical Advice:</strong><br>${match.advice}</div>
+        <div class="medicine"><strong>💊 Suggested Medicine (OTC / prescription consideration):</strong><br>${match.medicine}</div>
+        <div class="note">📌 This is an AI-assisted suggestion based on symptom patterns. Always consult a doctor before starting new medication.</div>
+      `;
+    } else {
+      container.innerHTML = `<div class="disease-name">🔍 No clear match</div><div class="advice">We could not confidently identify a disease based on your description. Please refine symptoms or contact our division doctors.</div><div class="medicine">🩺 Recommendation: Schedule a video consultation via our clinic.</div>`;
+    }
+  }
+
+
+  const divisionsData = [
+    { name: "🫀 Cardiology", icon: "❤️", description: "Heart & vascular diseases, hypertension, cardiac rehab.", doctors: ["Dr. A. Rahman (Interventional Cardiologist)", "Dr. S. Mehta (Cardiac Electrophysiology)", "Dr. N. Varma (Preventive Cardiology)"] },
+    { name: "🧠 Neurology", icon: "🧠", description: "Stroke, migraine, epilepsy, movement disorders.", doctors: ["Dr. P. Kulkarni (Stroke Specialist)", "Dr. R. Sen (Epileptologist)", "Dr. M. Iyer (Headache Clinic)"] },
+    { name: "🦴 Orthopedics", icon: "🦴", description: "Bone, joint, spine issues, sports injuries.", doctors: ["Dr. L. Nair (Joint Replacement)", "Dr. K. Sharma (Spine Surgeon)", "Dr. J. Menon (Sports Medicine)"] },
+    { name: "🤧 Pulmonology", icon: "🫁", description: "Asthma, COPD, respiratory infections, sleep apnea.", doctors: ["Dr. T. George (Interventional Pulmonology)", "Dr. F. Khan (Allergy & Asthma)", "Dr. U. Desai (Critical Care)"] },
+    { name: "🩺 General Medicine", icon: "🏥", description: "Primary care, fever, diabetes, geriatrics.", doctors: ["Dr. V. Singh (Internal Medicine)", "Dr. C. Roy (Diabetes Specialist)", "Dr. A. Gupta (General Physician)"] },
+    { name: "🤰 Gynecology", icon: "👶", description: "Women's health, prenatal care, fertility.", doctors: ["Dr. S. Basu (Obstetrician)", "Dr. P. Reddy (Gynecologic Surgery)", "Dr. M. Mathew (Reproductive Health)"] }
+  ];
+
+  
+  function renderDivisions() {
+    const container = document.getElementById('divisionsListContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    divisionsData.forEach(div => {
+      const btn = document.createElement('button');
+      btn.className = 'division-btn';
+      btn.innerHTML = `<span class="division-icon">${div.icon}</span> <span>${div.name}</span>`;
+      btn.addEventListener('click', () => {
+        showDivisionPopup(div);
+      });
+      container.appendChild(btn);
+    });
+  }
+
+  function showDivisionPopup(division) {
+    const popup = document.getElementById('divisionPopup');
+    const popupTitle = document.getElementById('popupTitle');
+    const popupBody = document.getElementById('popupBody');
+    popupTitle.innerHTML = `${division.icon} ${division.name} Division`;
+    let doctorsHtml = '<ul class="doctor-list">';
+    division.doctors.forEach(doc => { doctorsHtml += `<li>🩺 ${doc}</li>`; });
+    doctorsHtml += '</ul>';
+    popupBody.innerHTML = `
+      <p><strong>📋 About this division:</strong> ${division.description}</p>
+      <p><strong>👨‍⚕️ Leading Specialists:</strong></p>
+      ${doctorsHtml}
+      <p><em>📅 To book an appointment, please call +1 (555) 234-HEAL or use our online portal.</em></p>
+      <button class="close-popup" id="innerClosePopup">Close</button>
+    `;
+    popup.classList.add('active');
+    const innerClose = document.getElementById('innerClosePopup');
+    if (innerClose) {
+      innerClose.addEventListener('click', () => {
+        popup.classList.remove('active');
+      });
+    }
+  }
+
+  
+  function addOrUpdateSymptomRule() {
+    const keywordsRaw = document.getElementById('newSymKey').value.trim();
+    const diseaseName = document.getElementById('newDisease').value.trim();
+    const adviceText = document.getElementById('newAdvice').value.trim();
+    const medicineText = document.getElementById('newMedicine').value.trim();
+    if (!keywordsRaw || !diseaseName || !adviceText || !medicineText) {
+      alert("Please fill all fields (symptoms, disease, advice, medicine)");
+      return;
+    }
+    const keywordsArray = keywordsRaw.split(',').map(k => k.trim().toLowerCase()).filter(k => k.length > 0);
+    if (keywordsArray.length === 0) return;
+    
+    const existingIndex = symptomDB.findIndex(rule => rule.disease.toLowerCase() === diseaseName.toLowerCase());
+    if (existingIndex !== -1) {
+      
+      let existingKeywords = symptomDB[existingIndex].keywords;
+      const newKeywords = [...existingKeywords];
+      keywordsArray.forEach(kw => {
+        if (!newKeywords.includes(kw)) newKeywords.push(kw);
+      });
+      symptomDB[existingIndex] = { keywords: newKeywords, disease: diseaseName, advice: adviceText, medicine: medicineText };
+      alert(`✅ Updated "${diseaseName}" with new symptom patterns.`);
+    } else {
+      symptomDB.push({ keywords: keywordsArray, disease: diseaseName, advice: adviceText, medicine: medicineText });
+      alert(`✅ New disease "${diseaseName}" added to knowledge base.`);
+    }
+    updateRulesPreview();
+    
+    document.getElementById('newSymKey').value = '';
+    document.getElementById('newDisease').value = '';
+    document.getElementById('newAdvice').value = '';
+    document.getElementById('newMedicine').value = '';
+  }
+
+ 
+  function initPopups() {
+    const divisionPopupDiv = document.getElementById('divisionPopup');
+    const closeBtn = document.getElementById('closePopupBtn');
+    closeBtn.addEventListener('click', () => divisionPopupDiv.classList.remove('active'));
+    divisionPopupDiv.addEventListener('click', (e) => {
+      if (e.target === divisionPopupDiv) divisionPopupDiv.classList.remove('active');
+    });
+
+    const adminPopupDiv = document.getElementById('adminPopup');
+    const closeAdmin = document.getElementById('closeAdminPopupBtn');
+    closeAdmin.addEventListener('click', () => adminPopupDiv.classList.remove('active'));
+    adminPopupDiv.addEventListener('click', (e) => { if (e.target === adminPopupDiv) adminPopupDiv.classList.remove('active'); });
+   
+    const openAdminBtn = document.getElementById('openSymptomAdminBtn');
+    if (openAdminBtn) {
+      openAdminBtn.addEventListener('click', () => {
+        updateRulesPreview();
+        adminPopupDiv.classList.add('active');
+      });
+    }
+    const addRuleBtn = document.getElementById('addSymptomRuleBtn');
+    if (addRuleBtn) addRuleBtn.addEventListener('click', addOrUpdateSymptomRule);
+  }
+
+ 
+  document.addEventListener('DOMContentLoaded', () => {
+    renderDivisions();
+    initPopups();
+    updateRulesPreview();    
+
+    const checkBtn = document.getElementById('checkBtn');
+    const symptomInput = document.getElementById('symptomInput');
+    checkBtn.addEventListener('click', () => {
+      const userSymptoms = symptomInput.value;
+      displayResult(userSymptoms);
+    });
+    symptomInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        displayResult(symptomInput.value);
+      }
+    });
+   
+    displayResult("");
+  });
+  
+function come() {
+  const panel = document.getElementById("panel");
+
+  if (panel.style.display === "none") {
+    panel.style.display = "block";
+  } else {
+    panel.style.display = "none";
+  }
+}
+  
+</script>
 </body>
 </html>
