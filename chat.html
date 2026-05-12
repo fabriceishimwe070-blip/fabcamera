@@ -1,714 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MediCare — Login</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-  <style>
-    :root {
-      --navy: #04122a;
-      --navy-mid: #0c2345;
-      --teal: #2b9a78;
-      --teal-glow: #3ecfa0;
-      --gold: #e8b84b;
-      --cream: rgba(226,234,214,0.85);
-      --cream-dim: rgba(226,234,214,0.4);
-      --glass: rgba(255,255,255,0.05);
-      --glass-border: rgba(255,255,255,0.1);
-      --error: #f87171;
-    }
-
-    * { margin:0; padding:0; box-sizing:border-box; }
-
-    body {
-      background-color: var(--navy);
-      font-family: 'DM Sans', sans-serif;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-     overflow-y: scroll;
-      background-image:
-        radial-gradient(ellipse 70% 60% at 15% 15%, rgba(43,154,120,0.13) 0%, transparent 55%),
-        radial-gradient(ellipse 55% 50% at 85% 80%, rgba(12,35,69,0.9) 0%, transparent 65%),
-        radial-gradient(ellipse 40% 40% at 60% 20%, rgba(232,184,75,0.05) 0%, transparent 50%);
-    }
-
-    .bg-grid {
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(62,207,160,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(62,207,160,0.04) 1px, transparent 1px);
-      background-size: 48px 48px;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .bg-orb {
-      position: fixed;
-      border-radius: 50%;
-      filter: blur(80px);
-      pointer-events: none;
-      z-index: 0;
-    }
-    .orb1 {
-      width: 420px; height: 420px;
-      background: radial-gradient(circle, rgba(43,154,120,0.18), transparent 70%);
-      top: -100px; left: -100px;
-      animation: drift 12s ease-in-out infinite alternate;
-    }
-    .orb2 {
-      width: 300px; height: 300px;
-      background: radial-gradient(circle, rgba(232,184,75,0.1), transparent 70%);
-      bottom: -80px; right: -80px;
-      animation: drift 15s ease-in-out infinite alternate-reverse;
-    }
-
-    @keyframes drift {
-      from { transform: translate(0,0) scale(1); }
-      to   { transform: translate(30px, 20px) scale(1.05); }
-    }
-
-    .page-wrapper {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      width: 100%;
-      max-width: 980px;
-      min-height: 620px;
-      border-radius: 2rem;
-      overflow: hidden;
-      box-shadow: 0 40px 80px rgba(0,0,0,0.6);
-      border: 1px solid var(--glass-border);
-    }
-
-    .left-panel {
-      flex: 1;
-      background: linear-gradient(145deg, #0b2e22, #072238);
-      padding: 3rem 2.5rem;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .left-panel::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%233ecfa0' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-      pointer-events: none;
-    }
-
-    .brand {
-      position: relative;
-      z-index: 1;
-    }
-
-    .brand-logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 2.5rem;
-    }
-
-    .brand-icon {
-      width: 44px; height: 44px;
-      background: linear-gradient(135deg, var(--teal), #1a6b54);
-      border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.3rem;
-      box-shadow: 0 0 20px rgba(62,207,160,0.3);
-    }
-
-    .brand-name {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: white;
-      letter-spacing: 0.5px;
-    }
-
-    .brand-name span { color: var(--teal-glow); }
-
-    .left-headline {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 2.6rem;
-      font-weight: 600;
-      color: #ffffff;
-      line-height: 1.2;
-      margin-bottom: 1rem;
-    }
-
-    .left-headline em {
-      color: var(--teal-glow);
-      font-style: normal;
-    }
-
-    .left-sub {
-      color: var(--cream-dim);
-      font-size: 0.92rem;
-      line-height: 1.7;
-      font-weight: 300;
-    }
-
-    .features {
-      position: relative;
-      z-index: 1;
-      margin-top: 2rem;
-    }
-
-    .feature-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 1rem;
-    }
-
-    .feature-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--teal-glow);
-      flex-shrink: 0;
-      box-shadow: 0 0 8px rgba(62,207,160,0.6);
-    }
-
-    .feature-text {
-      font-size: 0.88rem;
-      color: var(--cream-dim);
-      font-weight: 300;
-    }
-
-    .left-footer {
-      position: relative;
-      z-index: 1;
-      font-size: 0.78rem;
-      color: rgba(226,234,214,0.2);
-      font-weight: 300;
-    }
-
-    .right-panel {
-      width: 420px;
-      background: rgba(4,18,42,0.95);
-      backdrop-filter: blur(20px);
-      padding: 3rem 2.5rem;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      border-left: 1px solid var(--glass-border);
-    }
-
-    .form-header {
-      margin-bottom: 2rem;
-    }
-
-    .form-title {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 2rem;
-      font-weight: 600;
-      color: #ffffff;
-      margin-bottom: 0.4rem;
-    }
-
-    .form-sub {
-      font-size: 0.85rem;
-      color: var(--cream-dim);
-      font-weight: 300;
-    }
-
-    .tabs {
-      display: flex;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--glass-border);
-      border-radius: 50px;
-      padding: 4px;
-      margin-bottom: 1.8rem;
-    }
-
-    .tab-btn {
-      flex: 1;
-      padding: 0.55rem;
-      border: none;
-      border-radius: 50px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.88rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.25s;
-      background: none;
-      color: var(--cream-dim);
-    }
-
-    .tab-btn.active {
-      background: var(--teal);
-      color: white;
-      box-shadow: 0 0 12px rgba(43,154,120,0.4);
-    }
-
-    .form-section { display: none; }
-    .form-section.active { display: block; }
-
-    .field {
-      margin-bottom: 1.1rem;
-    }
-
-    .field label {
-      display: block;
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: var(--cream-dim);
-      margin-bottom: 0.45rem;
-      letter-spacing: 0.3px;
-      text-transform: uppercase;
-    }
-
-    .field-wrap {
-      position: relative;
-    }
-
-    .field-icon {
-      position: absolute;
-      left: 1rem;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 1rem;
-      pointer-events: none;
-      opacity: 0.5;
-    }
-
-    .field input,
-    .field select {
-      width: 100%;
-      padding: 0.85rem 1rem 0.85rem 2.7rem;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 12px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.92rem;
-      color: var(--cream);
-      outline: none;
-      transition: all 0.25s;
-      appearance: none;
-    }
-
-    .field select option {
-      background: #0c2345;
-      color: #e2ead6;
-    }
-
-    .field input::placeholder { color: rgba(226,234,214,0.25); }
-
-    .field input:focus,
-    .field select:focus {
-      border-color: var(--teal-glow);
-      background: rgba(62,207,160,0.06);
-      box-shadow: 0 0 0 3px rgba(62,207,160,0.12);
-    }
-
-    .phone-row {
-      display: flex;
-      gap: 0.6rem;
-    }
-
-    .phone-row .country-code {
-      width: 100px;
-      flex-shrink: 0;
-      padding-left: 1rem;
-    }
-
-    .phone-row .phone-num {
-      flex: 1;
-      padding-left: 1rem;
-    }
-
-    .forgot {
-      text-align: right;
-      margin-top: -0.4rem;
-      margin-bottom: 1rem;
-    }
-
-    .forgot a {
-      font-size: 0.8rem;
-      color: var(--teal-glow);
-      text-decoration: none;
-      opacity: 0.8;
-      transition: opacity 0.2s;
-    }
-
-    .forgot a:hover { opacity: 1; }
-
-    .submit-btn {
-      width: 100%;
-      padding: 0.95rem;
-      background: linear-gradient(135deg, var(--teal), #1a6b54);
-      border: none;
-      border-radius: 12px;
-      color: white;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 1rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.25s;
-      position: relative;
-      overflow: hidden;
-      margin-top: 0.5rem;
-      letter-spacing: 0.3px;
-    }
-
-    .submit-btn::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, transparent, rgba(255,255,255,0.08));
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-
-    .submit-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 8px 24px rgba(43,154,120,0.4);
-    }
-
-    .submit-btn:hover::after { opacity: 1; }
-    .submit-btn:active { transform: translateY(0); }
-
-    .submit-btn.loading {
-      pointer-events: none;
-      opacity: 0.7;
-    }
-
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-      margin: 1.2rem 0;
-    }
-
-    .divider::before, .divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: rgba(255,255,255,0.08);
-    }
-
-    .divider span {
-      font-size: 0.78rem;
-      color: var(--cream-dim);
-    }
-
-    .row-2 {
-      display: flex;
-      gap: 0.7rem;
-    }
-
-    .row-2 .field { flex: 1; }
-
-    .terms {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin: 0.8rem 0;
-    }
-
-    .terms input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      accent-color: var(--teal-glow);
-      margin-top: 2px;
-      flex-shrink: 0;
-    }
-
-    .terms label {
-      font-size: 0.78rem;
-      color: var(--cream-dim);
-      line-height: 1.5;
-      cursor: pointer;
-      text-transform: none;
-      letter-spacing: 0;
-    }
-
-    .terms label a {
-      color: var(--teal-glow);
-      text-decoration: none;
-    }
-
-    .status-bar {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 1.2rem;
-      padding: 0.6rem 0.9rem;
-      border-radius: 10px;
-      font-size: 0.8rem;
-      display: none;
-    }
-
-    .status-bar.success {
-      background: rgba(62,207,160,0.1);
-      border: 1px solid rgba(62,207,160,0.2);
-      color: var(--teal-glow);
-      display: flex;
-    }
-
-    .status-bar.error {
-      background: rgba(248,113,113,0.1);
-      border: 1px solid rgba(248,113,113,0.2);
-      color: var(--error);
-      display: flex;
-    }
-
-    @media (max-width: 760px) {
-      .page-wrapper { flex-direction: column; border-radius: 1.5rem; }
-      .left-panel { padding: 2rem 1.8rem 1.5rem; }
-      .left-headline { font-size: 2rem; }
-      .features { display: none; }
-      .right-panel { width: 100%; padding: 2rem 1.8rem; }
-    }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Online Meeting</title>
+  <link rel="stylesheet" href="index.css">
 </head>
 <body>
+  <div><a href="home.html">go back</a></div>
+<div class="card">
+  <h1>
+    <span><marquee direction="left">Nice</marquee></span>
+    <span style="font-weight: 300; color: #2b7cff;"><marquee direction="right">Choice</marquee></span>
+  </h1>
 
-<div class="bg-grid"></div>
-<div class="bg-orb orb1"></div>
-<div class="bg-orb orb2"></div>
-
-<div class="page-wrapper">
-
-  <div class="left-panel">
-    <div class="brand">
-      <div class="brand-logo">
-        <div class="brand-icon">🩺</div>
-        <div class="brand-name">Medi<span>Care</span></div>
-      </div>
-      <div class="left-headline">Your health,our <em>priority</em>.</div>
-      <p class="left-sub">Access AI-powered symptom analysis, medical records — all in one place.</p>
-      <div class="features">
-        
-        <div> <img src="https://tse1.mm.bing.net/th/id/OIP.GVkSomEu9o4mKwGxQ4vkAwHaFD?cb=thfc1&rs=1&pid=ImgDetMain&o=7&rm=3" alt="" width="400px"></div>
-        
-      </div>
-    </div>
-    <div class="left-footer">© 2026 MediCare Health Platform. All rights reserved.</div>
+  <div class="actions">
+    <button class="btn btn-primary" id="createBtn">✨ Create meeting</button>
+    <button class="btn btn-outline" id="joinBtn">🔗 Join meeting</button>
   </div>
 
-  <div class="right-panel">
-    <div class="form-header">
-      <div class="form-title">Welcome back</div>
-      <div class="form-sub">Sign in or create your patient account</div>
-    </div>
+  
+  <div class="link-area">
+    <input type="text" id="meetingLink" placeholder="Meeting link appears here" readonly>
+    <button class="btn" id="copyBtn">📋 Copy</button>
+  </div>
 
-    <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('login')">Sign In</button>
-      <button class="tab-btn" onclick="switchTab('register')">Register</button>
-    </div>
+  <div class="status-badge">
+    <i></i>real time meet
+  </div>
 
-    <div id="login-section" class="form-section active">
-      <div class="field">
-        <label>Email Address</label>
-        <div class="field-wrap">
-          <span class="field-icon">✉️</span>
-          <input type="email" id="login-email" placeholder="you@example.com" />
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Phone Number</label>
-        <div class="field-wrap phone-row">
-          <select class="country-code">
-            <option value="+250">🇷🇼 +250</option>
-            <option value="+1">🇺🇸 +1</option>
-            <option value="+44">🇬🇧 +44</option>
-            <option value="+33">🇫🇷 +33</option>
-            <option value="+49">🇩🇪 +49</option>
-            <option value="+254">🇰🇪 +254</option>
-            <option value="+255">🇹🇿 +255</option>
-            <option value="+256">🇺🇬 +256</option>
-            <option value="+243">🇨🇩 +243</option>
-            <option value="+27">🇿🇦 +27</option>
-            <option value="+234">🇳🇬 +234</option>
-            <option value="+91">🇮🇳 +91</option>
-            <option value="+86">🇨🇳 +86</option>
-          </select>
-          <input type="tel" class="phone-num" id="login-phone" placeholder="078 000 0000" />
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Password</label>
-        <div class="field-wrap">
-          <span class="field-icon">🔒</span>
-          <input type="password" id="login-password" placeholder="••••••••" />
-        </div>
-      </div>
-
-      <div class="forgot"><a href="#">Forgot password?</a></div>
-
-      <button class="submit-btn" onclick="handleLogin(this)">Sign In to MediCare</button>
-      <div id="login-status" class="status-bar"></div>
-    </div>
-
-    <div id="register-section" class="form-section">
-      <div class="row-2">
-        <div class="field">
-          <label>First Name</label>
-          <div class="field-wrap">
-            <span class="field-icon">👤</span>
-            <input type="text" id="reg-first" placeholder="John" />
-          </div>
-        </div>
-        <div class="field">
-          <label>Last Name</label>
-          <div class="field-wrap">
-            <span class="field-icon">👤</span>
-            <input type="text" id="reg-last" placeholder="Doe" />
-          </div>
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Email Address</label>
-        <div class="field-wrap">
-          <span class="field-icon">✉️</span>
-          <input type="email" id="reg-email" placeholder="you@example.com" />
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Phone Number</label>
-        <div class="field-wrap phone-row">
-          <select class="country-code">
-            <option value="+250">🇷🇼 +250</option>
-            <option value="+1">🇺🇸 +1</option>
-            <option value="+44">🇬🇧 +44</option>
-            <option value="+33">🇫🇷 +33</option>
-            <option value="+49">🇩🇪 +49</option>
-            <option value="+254">🇰🇪 +254</option>
-            <option value="+255">🇹🇿 +255</option>
-            <option value="+256">🇺🇬 +256</option>
-            <option value="+243">🇨🇩 +243</option>
-            <option value="+27">🇿🇦 +27</option>
-            <option value="+234">🇳🇬 +234</option>
-            <option value="+91">🇮🇳 +91</option>
-            <option value="+86">🇨🇳 +86</option>
-          </select>
-          <input type="tel" class="phone-num" id="reg-phone" placeholder="078 000 0000" />
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Location / City</label>
-        <div class="field-wrap">
-          <span class="field-icon">📍</span>
-          <input type="text" id="reg-location" placeholder="e.g. Kigali, Rwanda" />
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Password</label>
-        <div class="field-wrap">
-          <span class="field-icon">🔒</span>
-          <input type="password" id="reg-password" placeholder="Min. 8 characters" />
-        </div>
-      </div>
-
-      <div class="terms">
-        <input type="checkbox" id="terms-check" />
-        <label for="terms-check">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></label>
-      </div>
-
-      <button class="submit-btn" onclick="handleRegister(this)">Create Account</button>
-      <div id="register-status" class="status-bar"></div>
-    </div>
+  <div class="footnote">
+    <span>🔒 end‑to‑end encrypted</span>
+    <span>👥 multi‑participant</span>
   </div>
 </div>
 
 <script>
-  function switchTab(tab) {
-    document.querySelectorAll('.tab-btn').forEach((b, i) => {
-      b.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+  (function() {
+    
+    const meetingLinkInput = document.getElementById('meetingLink');
+    const createBtn = document.getElementById('createBtn');
+    const joinBtn = document.getElementById('joinBtn');
+    const copyBtn = document.getElementById('copyBtn');
+
+  
+    let currentRoom = '';        
+    const JITSI_DOMAIN = 'meet.jit.si';
+
+   
+    function generateRoomId() {
+      const adjectives = ['sunny', 'coral', 'mellow', 'frost', 'ember', 'azure', 'breeze', 'cabin', 'dune', 'elm', 'fjord', 'grove', 'haze', 'ivy', 'jade', 'kite', 'luna', 'maple', 'nova', 'oasis', 'pixel', 'quill', 'ridge', 'sable', 'tide', 'umbra', 'vivid', 'wisp', 'yarn', 'zest'];
+      const nouns = ['wave', 'peak', 'field', 'bridge', 'cloud', 'drift', 'echo', 'flame', 'glen', 'harbor', 'island', 'knoll', 'lodge', 'meadow', 'nook', 'orbit', 'palm', 'reef', 'spire', 'stone', 'tower', 'vista', 'wilder', 'cove', 'delta', 'brook', 'ridge', 'shade', 'vale', 'wood'];
+      const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+      const noun = nouns[Math.floor(Math.random() * nouns.length)];
+      const num = Math.floor(Math.random() * 999) + 10;
+      return `${adj}-${noun}-${num}`;
+    }
+
+   
+    function updateLinkDisplay(roomName) {
+      if (!roomName) {
+        meetingLinkInput.value = '';
+        return;
+      }
+      const fullUrl = `https://${JITSI_DOMAIN}/${roomName}`;
+      meetingLinkInput.value = fullUrl;
+    }
+
+    
+    function openJitsiMeeting(roomName) {
+      if (!roomName) return;
+      
+      const url = `https://${JITSI_DOMAIN}/${roomName}#config.startWithVideoMuted=false&config.startWithAudioMuted=false`;
+    
+      window.open(url, '_blank');
+    }
+
+   
+    function createMeeting() {
+      const room = generateRoomId();
+      currentRoom = room;
+      updateLinkDisplay(room);
+     
+      openJitsiMeeting(room);
+    }
+
+    
+    function joinMeeting() {
+      let rawLink = meetingLinkInput.value.trim();
+      if (!rawLink) {
+        
+        createMeeting();
+        return;
+      }
+
+     
+      let roomName = '';
+      try {
+        if (rawLink.startsWith('http://') || rawLink.startsWith('https://')) {
+          const urlObj = new URL(rawLink);
+          
+          if (urlObj.hostname === JITSI_DOMAIN || urlObj.hostname.endsWith('.' + JITSI_DOMAIN)) {
+            roomName = urlObj.pathname.replace(/^\/+/, '').replace(/\/+$/, '');
+          } else {
+           
+            roomName = rawLink.split('/').pop().split('#')[0].split('?')[0];
+          }
+        } else {
+          
+          roomName = rawLink.split('/').pop().split('#')[0].split('?')[0];
+        }
+      } catch (_) {
+        
+        roomName = rawLink.replace(/[^a-zA-Z0-9\-_]/g, '-');
+      }
+
+     
+      if (!roomName) {
+        
+        roomName = generateRoomId();
+      }
+     
+      roomName = roomName.replace(/[^a-zA-Z0-9\-_]/g, '-').substring(0, 60);
+
+      currentRoom = roomName;
+      
+      updateLinkDisplay(roomName);
+      
+      openJitsiMeeting(roomName);
+    }
+
+   
+    function copyLink() {
+      const link = meetingLinkInput.value.trim();
+      if (!link) {
+        
+        createMeeting();
+        
+        setTimeout(() => {
+          if (meetingLinkInput.value) {
+            meetingLinkInput.select();
+            navigator.clipboard.writeText(meetingLinkInput.value).catch(() => {});
+          }
+        }, 50);
+        return;
+      }
+      meetingLinkInput.select();
+      navigator.clipboard.writeText(link).catch(() => {
+        
+        document.execCommand('copy');
+      });
+      const original = copyBtn.textContent;
+      copyBtn.textContent = '✅ Copied';
+      setTimeout(() => { copyBtn.textContent = original; }, 1200);
+    }
+
+   
+    createBtn.addEventListener('click', createMeeting);
+
+    joinBtn.addEventListener('click', joinMeeting);
+
+    copyBtn.addEventListener('click', copyLink);
+
+   
+    meetingLinkInput.addEventListener('focus', function() {
+      this.select();
     });
-    document.getElementById('login-section').classList.toggle('active', tab === 'login');
-    document.getElementById('register-section').classList.toggle('active', tab === 'register');
-  }
 
-  function showStatus(id, type, msg) {
-    const el = document.getElementById(id);
-    el.className = 'status-bar ' + type;
-    el.innerHTML = (type === 'success' ? '✅ ' : '⚠️ ') + msg;
-  }
+   
+    meetingLinkInput.placeholder = 'your meeting link appears here';
 
-  function setLoading(btn, state) {
-    btn.classList.toggle('loading', state);
-    btn.textContent = state ? 'Please wait…' : btn.dataset.label;
-  }
-
-  function handleLogin(btn) {
-    if (!btn.dataset.label) btn.dataset.label = btn.textContent;
-    const email = document.getElementById('login-email').value.trim();
-    const phone = document.getElementById('login-phone').value.trim();
-    const password = document.getElementById('login-password').value;
-
-    if (!email || !phone || !password) {
-      showStatus('login-status', 'error', 'Please fill in all fields.');
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      showStatus('login-status', 'error', 'Enter a valid email address.');
-      return;
-    }
-    if (phone.length < 7) {
-      showStatus('login-status', 'error', 'Enter a valid phone number.');
-      return;
-    }
-    if(password=="fabrice2007"){
-     window.location.href="home.html"}
-    setLoading(btn, true);
-    setTimeout(() => {
-      setLoading(btn, false);
-      showStatus('login-status', 'success', 'Signed in successfully! Redirecting…');
-    }, 1600);
-  }
-
-  function handleRegister(btn) {
-    if (!btn.dataset.label) btn.dataset.label = btn.textContent;
-    const first = document.getElementById('reg-first').value.trim();
-    const last = document.getElementById('reg-last').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const phone = document.getElementById('reg-phone').value.trim();
-    const location = document.getElementById('reg-location').value.trim();
-    const password = document.getElementById('reg-password').value;
-    const terms = document.getElementById('terms-check').checked;
-
-    if (!first || !last || !email || !phone || !location || !password) {
-      showStatus('register-status', 'error', 'Please fill in all fields.');
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      showStatus('register-status', 'error', 'Enter a valid email address.');
-      return;
-    }
-    if (phone.length < 7) {
-      showStatus('register-status', 'error', 'Enter a valid phone number.');
-      return;
-    }
-    if (password.length < 8) {
-      showStatus('register-status', 'error', 'Password must be at least 8 characters.');
-      return;
-    }
-    if (!terms) {
-      showStatus('register-status', 'error', 'You must agree to the Terms of Service.');
-      return;
-    }
-
-    setLoading(btn, true);
-    setTimeout(() => {
-      setLoading(btn, false);
-      showStatus('register-status', 'success', 'Account created! Please check your email.');
-    }, 1800);
-  }
+    
+    meetingLinkInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        joinMeeting();
+      }
+    });
+    console.log('✅ Jitsi meeting app ready · no backend');
+  })();
 </script>
 </body>
 </html>
