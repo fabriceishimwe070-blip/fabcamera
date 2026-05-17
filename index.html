@@ -357,7 +357,19 @@
       margin-top: 0.5rem;
       letter-spacing: 0.3px;
     }
-
+  .none{
+ width: 100%;
+      padding: 0.85rem 1rem 0.85rem 2.7rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.92rem;
+      color: var(--cream);
+      outline: none;
+      transition: all 0.25s;
+      appearance: none;
+  }
     .submit-btn::after {
       content: '';
       position: absolute;
@@ -467,6 +479,9 @@
       .features { display: none; }
       .right-panel { width: 100%; padding: 2rem 1.8rem; }
     }
+  .form-sectionactive{
+    display: none;
+  }
   </style>
 </head>
 <body>
@@ -506,6 +521,8 @@
     </div>
 
     <div id="login-section" class="form-section active">
+      <label style="color: rgb(246, 242, 242,0.3);" >First name</label><br>
+      <input type="text" id="reg-first" placeholder="John" class="none"/>
       <div class="field">
         <label>Email Address</label>
         <div class="field-wrap">
@@ -550,7 +567,7 @@
       <div id="login-status" class="status-bar"></div>
     </div>
 
-    <div id="register-section" class="form-section">
+    <div id="register-section" class="form-section"s >
       <div class="row-2">
         <div class="field">
           <label>First Name</label>
@@ -629,6 +646,7 @@
   function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach((b, i) => {
       b.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+    
     });
     document.getElementById('login-section').classList.toggle('active', tab === 'login');
     document.getElementById('register-section').classList.toggle('active', tab === 'register');
@@ -650,6 +668,9 @@
     const email = document.getElementById('login-email').value.trim();
     const phone = document.getElementById('login-phone').value.trim();
     const password = document.getElementById('login-password').value;
+    const name=document.getElementById("reg-first").value
+
+    localStorage.setItem("name",name)
 
     if (!email || !phone || !password) {
       showStatus('login-status', 'error', 'Please fill in all fields.');

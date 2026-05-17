@@ -5,15 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <title>MediAssist Pro </title>
   <link rel="stylesheet" href="home2.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
   <a href="index.html" style="color: white; font-weight: 900;"><u>Log out</u></a>
+
   <div class="all">
 <div class="app-container">
   <div class="home">
-   <div class="one"><div><a href="chat.html"><u>Talk live</u></a></div><div><a href="login.html"><u>Chat-DR</u></a></div><div></div><div><button onclick="come()"><u>categories</u></button></div><div class="settings"><button><u>Settings</u></button></div></div> 
+   <div class="one"><div><a href="chat.html"><u>Talk live</u></a></div><div><a href="login.html"><u>Chat-DR</u></a></div><div></div><div><button onclick="come()"><u>categories</u></button></div><div class="settings"><button onclick="set()"><u>Settings</u></button><div class="hide" id="hide">di
+    <button>mode</button><br>
+    <button>font-size</button><br>
+    <button>Help&Support</button><br>
+    <button>see your id</button>
+  </div></div></div> 
 
-   <div class="profile"><div>name</div><div>icon</div></div>
+   <div class="profile"></span><span><i class="fa-solid fa-user" style="color: red;"></i></span> -<span id="hi-div" style="color: green;font-family: 'Courier New', Courier, monospace;font-size: larger; font-weight: bolder;"></div>
 
   </div>
 
@@ -98,7 +105,18 @@
 </div>
 </div>
 <script>
- 
+  function set(){
+  const hide = document.getElementById("hide");
+
+  if (hide.style.display === "none") {
+    hide.style.display = "block";
+  } else {
+    hide.style.display = "none";
+  }
+  }
+ const hi=document.getElementById("hi-div")
+ let nam=localStorage.getItem("name")
+ hi.textContent=nam
   let symptomDB = [
     { keywords: ["headache", "throbbing head", "migraine"], disease: "Tension Headache / Migraine", advice: "Rest in a dark quiet room, stay hydrated, avoid screens.", medicine: "Ibuprofen 400mg or Paracetamol 500mg as needed." },
     { keywords: ["fever", "high temperature", "chills", "body ache"], disease: "Viral Fever / Flu", advice: "Take rest, increase fluid intake, monitor temperature.", medicine: "Paracetamol 500mg every 6 hours, ORS solution." },
