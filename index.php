@@ -1,3 +1,26 @@
+<?php
+
+include "conne.php";
+
+if(isset($_POST["create"])){
+
+    $phone = mysqli_real_escape_string($conn, $_POST["phone"]);
+    $name = mysqli_real_escape_string($conn, $_POST["name"]);
+    $email = mysqli_real_escape_string($conn, $_POST["email"]);
+    $location = mysqli_real_escape_string($conn, $_POST["country"]);
+
+    $query = "INSERT INTO users (Fname,phon, email, country)
+              VALUES ('$name', '$phone', '$email', '$location')";
+
+    if(mysqli_query($conn, $query)){
+        echo "Registered successfully";
+    } else {
+        echo "Not done: " . mysqli_error($conn);
+    }
+}
+
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -520,9 +543,10 @@
       <button class="tab-btn" onclick="switchTab('register')">Register</button>
     </div>
 
+    <!-- FIX 1: Changed duplicate id="reg-first" to id="login-name" -->
     <div id="login-section" class="form-section active">
       <label style="color: rgb(246, 242, 242,0.3);" >First name</label><br>
-      <input type="text" id="reg-first" placeholder="John" class="none"/>
+      <input type="text" id="login-name" placeholder="John" class="none"/>
       <div class="field">
         <label>Email Address</label>
         <div class="field-wrap">
@@ -567,13 +591,17 @@
       <div id="login-status" class="status-bar"></div>
     </div>
 
-    <div id="register-section" class="form-section"s >
+    <!-- FIX 2: Moved submit button inside the form, added method="post" action="" -->
+    <!-- FIX 3: Removed stray 's' from class="form-section" -->
+    <div id="register-section" class="form-section">
+      <form method="post" action="">
+
       <div class="row-2">
         <div class="field">
           <label>First Name</label>
           <div class="field-wrap">
             <span class="field-icon">👤</span>
-            <input type="text" id="reg-first" placeholder="John" />
+            <input type="text" id="reg-first" placeholder="John" name="name" />
           </div>
         </div>
         <div class="field">
@@ -589,7 +617,7 @@
         <label>Email Address</label>
         <div class="field-wrap">
           <span class="field-icon">✉️</span>
-          <input type="email" id="reg-email" placeholder="you@example.com" />
+          <input type="email" id="reg-email" placeholder="you@example.com" name="email" />
         </div>
       </div>
 
@@ -611,7 +639,7 @@
             <option value="+91">🇮🇳 +91</option>
             <option value="+86">🇨🇳 +86</option>
           </select>
-          <input type="tel" class="phone-num" id="reg-phone" placeholder="078 000 0000" />
+          <input type="tel" class="phone-num" id="reg-phone" placeholder="078 000 0000" name="phone"/>
         </div>
       </div>
 
@@ -619,7 +647,7 @@
         <label>Location / City</label>
         <div class="field-wrap">
           <span class="field-icon">📍</span>
-          <input type="text" id="reg-location" placeholder="e.g. Kigali, Rwanda" />
+          <input type="text" id="reg-location" placeholder="e.g. Kigali, Rwanda" name="country" />
         </div>
       </div>
 
@@ -636,8 +664,11 @@
         <label for="terms-check">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></label>
       </div>
 
-      <button class="submit-btn" onclick="handleRegister(this)">Create Account</button>
+      <!-- FIX 4: Button moved inside form, name="create" now works with isset($_POST["create"]) -->
+      <button class="submit-btn" type="submit" name="create" onclick="return handleRegister(this)">Create Account</button>
       <div id="register-status" class="status-bar"></div>
+
+      </form>
     </div>
   </div>
 </div>
@@ -668,9 +699,10 @@
     const email = document.getElementById('login-email').value.trim();
     const phone = document.getElementById('login-phone').value.trim();
     const password = document.getElementById('login-password').value;
-    const name=document.getElementById("reg-first").value
+    // FIX 5: Read from correct login-section name field (login-name), not reg-first
+    const name = document.getElementById("login-name").value;
 
-    localStorage.setItem("name",name)
+    localStorage.setItem("name", name);
 
     if (!email || !phone || !password) {
       showStatus('login-status', 'error', 'Please fill in all fields.');
@@ -684,8 +716,8 @@
       showStatus('login-status', 'error', 'Enter a valid phone number.');
       return;
     }
-    if(password=="fabrice2007"){
-     window.location.href="home.html"}
+    // FIX 6: Removed hardcoded plaintext admin password bypass
+    // Admin authentication should be handled server-side
     setLoading(btn, true);
     setTimeout(() => {
       setLoading(btn, false);
@@ -705,30 +737,26 @@
 
     if (!first || !last || !email || !phone || !location || !password) {
       showStatus('register-status', 'error', 'Please fill in all fields.');
-      return;
+      return false;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       showStatus('register-status', 'error', 'Enter a valid email address.');
-      return;
+      return false;
     }
     if (phone.length < 7) {
       showStatus('register-status', 'error', 'Enter a valid phone number.');
-      return;
+      return false;
     }
     if (password.length < 8) {
       showStatus('register-status', 'error', 'Password must be at least 8 characters.');
-      return;
+      return false;
     }
     if (!terms) {
       showStatus('register-status', 'error', 'You must agree to the Terms of Service.');
-      return;
+      return false;
     }
 
-    setLoading(btn, true);
-    setTimeout(() => {
-      setLoading(btn, false);
-      showStatus('register-status', 'success', 'Account created! Please check your email.');
-    }, 1800);
+    return true;
   }
 </script>
 </body>
